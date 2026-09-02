@@ -1,0 +1,13 @@
+{
+  "name": "wedding-ledger",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Static wedding budget tracker. The icon build bakes the days-remaining count into the app icons.",
+  "scripts": {
+    "icons": "node build-icons.mjs"
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2"
+  }
+}

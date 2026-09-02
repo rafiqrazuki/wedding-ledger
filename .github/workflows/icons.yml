@@ -1,0 +1,56 @@
+name: Refresh app icons
+
+# The home screen icon is copied by the phone when the app is added and never
+# re-fetched, so the file itself has to carry the current count. Rebuild it
+# daily and commit when the number changes; GitHub Pages redeploys on push.
+
+on:
+  schedule:
+    - cron: "10 17 * * *"        # 01:10 Malaysia time (UTC+8)
+  workflow_dispatch:
+    inputs:
+      wedding_date:
+        description: "Wedding date (YYYY-MM-DD). Leave blank to use the built-in one."
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-icons
+  cancel-in-progress: false
+
+jobs:
+  icons:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - run: npm ci
+
+      - name: Rebuild the icons
+        env:
+          WEDDING_DATE: ${{ inputs.wedding_date }}
+        run: node build-icons.mjs | tee build.log
+
+      - name: Commit when the count has changed
+        run: |
+          if [ -z "$(git status --porcelain -- 'icon-*.png')" ]; then
+            echo "Icons unchanged — nothing to commit."
+            exit 0
+          fi
+          summary="$(tail -n 1 build.log)"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- 'icon-*.png'
+          git commit -m "Rebuild app icons — ${summary}"
+          git push
+
+      - name: Tidy up
+        if: always()
+        run: rm -f build.log

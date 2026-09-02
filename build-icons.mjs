@@ -1,113 +1,91 @@
-// Generates the app icons as PNGs with no dependencies.
-// Run: node build-icons.mjs
-import { deflateSync } from "node:zlib";
-import { writeFileSync } from "node:fs";
+/*
+ * Builds the app icons with the days-remaining count baked in.
+ *
+ * The home screen icon is copied by the phone at the moment the app is added
+ * and never re-fetched, so the only way it can show a current number is for
+ * the file itself to be rebuilt. A scheduled workflow runs this once a day and
+ * commits the result; re-adding the app to a home screen then installs an icon
+ * showing that day's count.
+ *
+ *   node build-icons.mjs                 # uses WEDDING_DATE below
+ *   WEDDING_DATE=2027-03-01 node build-icons.mjs
+ *   TODAY=2026-12-10 node build-icons.mjs        # for testing
+ *
+ * Keep WEDDING_DATE in step with the date set inside the app — the app reads
+ * its date from the database, which this build can't see.
+ */
+import { Resvg } from "@resvg/resvg-js";
+import { readFileSync, writeFileSync } from "node:fs";
 
-const BG = [0x0e, 0x5c, 0x43];      // deep emerald
-const RING = [0xfb, 0xfc, 0xfa];    // cream
-const GEM = [0xcf, 0xa2, 0x5a];     // brass
+const WEDDING_DATE = process.env.WEDDING_DATE || "2026-12-12";
+const SIZES = [180, 192, 512];
+const FONT = "build/IBMPlexMono-SemiBold.ttf";
 
-function crc32(buf) {
-  let c, crc = 0xffffffff;
-  for (let n = 0; n < buf.length; n++) {
-    c = (crc ^ buf[n]) & 0xff;
-    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    crc = c ^ (crc >>> 8);
-  }
-  return (crc ^ 0xffffffff) >>> 0;
+const BG = "#0E5C43";      // deep emerald
+const RING = "#FBFCFA";    // cream
+const GEM = "#CFA25A";     // brass
+
+function daysLeft() {
+  const today = process.env.TODAY ? new Date(process.env.TODAY + "T00:00:00Z") : new Date();
+  const t = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  const [y, m, d] = WEDDING_DATE.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  return Math.round((Date.UTC(y, m - 1, d) - t) / 86400000);
 }
 
-function chunk(type, data) {
-  const len = Buffer.alloc(4);
-  len.writeUInt32BE(data.length);
-  const body = Buffer.concat([Buffer.from(type, "ascii"), data]);
-  const crc = Buffer.alloc(4);
-  crc.writeUInt32BE(crc32(body));
-  return Buffer.concat([len, body, crc]);
+/* The ring: no date, the day itself, or a date already gone by. */
+function ringSvg(size, gold) {
+  const S = size;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${S}" height="${S}" viewBox="0 0 100 100">
+  <rect width="100" height="100" fill="${BG}"/>
+  <circle cx="50" cy="57.5" r="25" fill="none" stroke="${gold ? GEM : RING}" stroke-width="7.5"/>
+  <path d="M50 16 L60 30 L40 30 Z" fill="${GEM}"/>
+</svg>`;
 }
 
-function png(size, pixels) {
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(size, 0);
-  ihdr.writeUInt32BE(size, 4);
-  ihdr[8] = 8;    // bit depth
-  ihdr[9] = 6;    // RGBA
-  const raw = Buffer.alloc(size * (size * 4 + 1));
-  let p = 0;
-  for (let y = 0; y < size; y++) {
-    raw[p++] = 0; // filter: none
-    for (let x = 0; x < size; x++) {
-      const i = (y * size + x) * 4;
-      raw[p++] = pixels[i];
-      raw[p++] = pixels[i + 1];
-      raw[p++] = pixels[i + 2];
-      raw[p++] = pixels[i + 3];
-    }
-  }
-  return Buffer.concat([
-    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-    chunk("IHDR", ihdr),
-    chunk("IDAT", deflateSync(raw, { level: 9 })),
-    chunk("IEND", Buffer.alloc(0)),
-  ]);
+/* Counting down. Past two digits the word is dropped so the number can fill
+   the tile, matching what the in-app icon does. */
+function countSvg(size, days) {
+  const S = size;
+  const label = String(days);
+  const wide = label.length >= 3;
+  const fontSize = wide ? 52 : label.length === 2 ? 54 : 60;
+  const y = wide ? 68 : 60;
+
+  const word = wide
+    ? ""
+    : `<text x="50" y="84" font-family="IBM Plex Mono" font-weight="600" font-size="12"
+        letter-spacing="1.2" fill="${GEM}" text-anchor="middle">${days === 1 ? "DAY" : "DAYS"}</text>`;
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${S}" height="${S}" viewBox="0 0 100 100">
+  <rect width="100" height="100" fill="${BG}"/>
+  <text x="50" y="${y}" font-family="IBM Plex Mono" font-weight="600" font-size="${fontSize}"
+        fill="${RING}" text-anchor="middle" textLength="${wide ? 78 : ""}" ${wide ? 'lengthAdjust="spacingAndGlyphs"' : ""}>${label}</text>
+  ${word}
+</svg>`;
 }
 
-// Coverage of the ring + gem at a point, sampled 4x4 for smooth edges.
-function coverage(px, py, s) {
-  const cx = 0.5 * s, cy = 0.585 * s;
-  const r = 0.235 * s, half = 0.0275 * s;      // ring radius and half-thickness
-  const gemW = 0.15 * s, gemTop = 0.215 * s, gemBot = 0.325 * s;
+const days = daysLeft();
+const fontData = readFileSync(FONT);
 
-  let ring = 0, gem = 0;
-  for (let sy = 0; sy < 4; sy++) {
-    for (let sx = 0; sx < 4; sx++) {
-      const x = px + (sx + 0.5) / 4;
-      const y = py + (sy + 0.5) / 4;
-      const d = Math.hypot(x - cx, y - cy);
-      if (Math.abs(d - r) <= half) ring++;
-      // gem: a triangle narrowing downward toward the band
-      if (y >= gemTop && y <= gemBot) {
-        const t = (y - gemTop) / (gemBot - gemTop);
-        const w = (gemW / 2) * (1 - t * 0.72);
-        if (Math.abs(x - cx) <= w) gem++;
-      }
-    }
-  }
-  return { ring: ring / 16, gem: gem / 16 };
+for (const size of SIZES) {
+  const svg = days === null || days <= 0 ? ringSvg(size, days === 0) : countSvg(size, days);
+  const png = new Resvg(svg, {
+    fitTo: { mode: "width", value: size },
+    font: { fontBuffers: [fontData], defaultFontFamily: "IBM Plex Mono", loadSystemFonts: false },
+  })
+    .render()
+    .asPng();
+  writeFileSync(`icon-${size}.png`, png);
+  console.log(`wrote icon-${size}.png`);
 }
 
-function render(size) {
-  const px = Buffer.alloc(size * size * 4);
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const { ring, gem } = coverage(x, y, size);
-      let col = BG;
-      let a = 1;
-      if (gem > 0) {
-        const m = Math.min(1, gem);
-        col = [
-          Math.round(BG[0] * (1 - m) + GEM[0] * m),
-          Math.round(BG[1] * (1 - m) + GEM[1] * m),
-          Math.round(BG[2] * (1 - m) + GEM[2] * m),
-        ];
-      }
-      if (ring > 0) {
-        const m = Math.min(1, ring);
-        col = [
-          Math.round(col[0] * (1 - m) + RING[0] * m),
-          Math.round(col[1] * (1 - m) + RING[1] * m),
-          Math.round(col[2] * (1 - m) + RING[2] * m),
-        ];
-      }
-      const i = (y * size + x) * 4;
-      px[i] = col[0]; px[i + 1] = col[1]; px[i + 2] = col[2]; px[i + 3] = Math.round(a * 255);
-    }
-  }
-  return png(size, px);
-}
-
-for (const size of [180, 192, 512]) {
-  const file = `icon-${size}.png`;
-  writeFileSync(file, render(size));
-  console.log("wrote", file);
-}
+console.log(
+  days === null
+    ? "no wedding date set"
+    : days > 0
+      ? `${days} day${days === 1 ? "" : "s"} to ${WEDDING_DATE}`
+      : days === 0
+        ? "the wedding is today"
+        : `${Math.abs(days)} days since ${WEDDING_DATE}`
+);

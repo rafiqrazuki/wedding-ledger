@@ -33,11 +33,22 @@ somewhere safe.
 There is no build step. `index.html` is the whole app — open it directly in a
 browser, or serve the folder with any static file server.
 
-To regenerate the icons after changing the colours:
+The app icons carry the days-remaining count, baked into the PNG files. A
+phone copies the icon when you add the app to a home screen and never asks
+again, so the file itself has to be current: `.github/workflows/icons.yml`
+rebuilds and commits them once a day.
 
 ```bash
-node build-icons.mjs
+npm ci
+node build-icons.mjs                      # uses the date in build-icons.mjs
+WEDDING_DATE=2027-03-01 node build-icons.mjs
+TODAY=2026-12-10 node build-icons.mjs     # pretend it is another day
 ```
+
+**The wedding date lives in two places.** The app reads it from the database;
+the icon build has its own copy in `build-icons.mjs`, because the build has no
+way to read the database. Change the date in the app and you must change it
+there too, or the icon will count down to the wrong day.
 
 ## Files
 
@@ -46,4 +57,6 @@ node build-icons.mjs
 | `index.html`            | The entire app: markup, styles, and logic            |
 | `manifest.webmanifest`  | Makes it installable to a phone home screen          |
 | `icon-*.png`            | App icons                                            |
-| `build-icons.mjs`       | Regenerates the icons (Node, no dependencies)        |
+| `build-icons.mjs`       | Bakes the days-remaining count into the icons        |
+| `build/`                | IBM Plex Mono, used by the icon build (OFL licensed) |
+| `.github/workflows/`    | Daily job that rebuilds and commits the icons        |
