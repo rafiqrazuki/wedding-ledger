@@ -913,7 +913,7 @@
     <div class="field">
       <label class="clabel" for="e-title">Item</label>
       <input id="e-title" placeholder="Photographer, catering, pelamin&hellip;"
-             autocapitalize="words" enterkeyhint="next" required>
+             autocapitalize="words" enterkeyhint="next">
     </div>
 
     <div class="field">
@@ -947,8 +947,8 @@
    </div>
 
     <div class="sheet-actions">
-      <button class="btn" type="button" id="e-cancel">Cancel</button>
-      <button class="btn-primary" type="submit" id="e-save">Save</button>
+      <button class="btn" type="button" id="e-cancel">Undo changes</button>
+      <button class="btn-primary" type="submit" id="e-save">Done</button>
     </div>
 
     <div class="sheet-foot" id="e-delete-wrap" hidden>
@@ -992,8 +992,8 @@
    </div>
 
     <div class="sheet-actions">
-      <button class="btn" type="button" id="s-cancel">Cancel</button>
-      <button class="btn-primary" type="submit">Save</button>
+      <button class="btn" type="button" id="s-cancel">Undo changes</button>
+      <button class="btn-primary" type="submit" id="s-done">Done</button>
     </div>
   </form>
 </dialog>
@@ -1139,8 +1139,9 @@
   /* ---------- mutations ---------- */
 
   function addItem(data) {
+    var newItemId = newId();
     state.items.push({
-      id: newId(),
+      id: newItemId,
       title: data.title,
       category: data.category || "Other",
       cost: num(data.cost),
@@ -1149,6 +1150,7 @@
     renderSummary();
     renderList();
     saveLocal();
+    return newItemId;
   }
 
   function patchItem(id, patch) {
@@ -1468,7 +1470,10 @@
   el("editor").addEventListener("close", onSheetClose);
   el("settings").addEventListener("close", onSheetClose);
 
-  /* ---------- item editor ---------- */
+  /* ---------- item editor ----------
+     Everything typed here is written straight through to storage, so there
+     is no Save step. "Undo changes" puts the item back the way it was when
+     the sheet opened. */
 
   var eCat = el("e-cat");
   CATEGORIES.forEach(function (c) {
@@ -1478,12 +1483,67 @@
     eCat.appendChild(o);
   });
 
+  var editorBefore = null;    // the item as it was on open, for undo
+  var editorTimer = null;
+  var editorPending = false;
+  var editorUndoing = false;
+
+  function readEditor() {
+    return {
+      title: el("e-title").value.trim(),
+      category: eCat.value,
+      cost: num(el("e-cost").value),
+      deposit: num(el("e-dep").value)
+    };
+  }
+
+  function commitEditor() {
+    clearTimeout(editorTimer);
+    editorTimer = null;
+    if (!editorPending || editorUndoing) { editorPending = false; return; }
+    editorPending = false;
+
+    var d = readEditor();
+    if (editingId) {
+      patchItem(editingId, {
+        title: d.title || "Untitled item",
+        category: d.category,
+        cost: d.cost,
+        deposit: d.deposit
+      });
+    } else if (d.title || d.cost || d.deposit) {
+      /* A new item only becomes real once there is something in it. */
+      editingId = addItem({
+        title: d.title || "Untitled item",
+        category: d.category,
+        cost: d.cost,
+        deposit: d.deposit
+      });
+      el("e-delete-wrap").hidden = false;
+      el("e-cancel").textContent = "Undo changes";
+    }
+  }
+
+  function touchEditor() {
+    editorPending = true;
+    clearTimeout(editorTimer);
+    editorTimer = setTimeout(commitEditor, 400);
+  }
+
   function openEditor(id) {
     editingId = id || null;
     var it = id ? find(id) : null;
 
+    clearTimeout(editorTimer);
+    editorTimer = null;
+    editorPending = false;
+    editorUndoing = false;
+    editorBefore = it
+      ? { id: it.id, title: it.title, category: it.category, cost: it.cost, deposit: it.deposit }
+      : null;
+
     el("editor-title").textContent = it ? "Edit item" : "Add item";
-    el("e-save").textContent = it ? "Save" : "Add item";
+    el("e-cancel").textContent = it ? "Undo changes" : "Discard";
     el("e-title").value = it ? it.title : "";
     el("e-cost").value = it && it.cost ? String(it.cost) : "";
     el("e-dep").value = it && it.deposit ? String(it.deposit) : "";
@@ -1515,59 +1575,125 @@
     el("e-settle").hidden = cost > 0 && dep >= cost;
   }
 
-  el("e-cost").addEventListener("input", updateEditorBalance);
-  el("e-dep").addEventListener("input", updateEditorBalance);
+  ["e-title", "e-cost", "e-dep"].forEach(function (id) {
+    el(id).addEventListener("input", function () {
+      updateEditorBalance();
+      touchEditor();
+    });
+    /* Leaving a field writes it through immediately rather than waiting. */
+    el(id).addEventListener("blur", commitEditor);
+  });
+
+  eCat.addEventListener("change", touchEditor);
 
   el("e-settle").addEventListener("click", function () {
     el("e-dep").value = el("e-cost").value;
     updateEditorBalance();
+    touchEditor();
   });
 
-  el("e-cancel").addEventListener("click", function () { el("editor").close(); });
+  el("e-cancel").addEventListener("click", function () {
+    editorUndoing = true;
+    clearTimeout(editorTimer);
+    editorTimer = null;
+    editorPending = false;
+
+    if (editorBefore) patchItem(editorBefore.id, editorBefore);
+    else if (editingId) removeItem(editingId);
+
+    editingId = null;
+    el("editor").close();
+  });
 
   el("e-delete").addEventListener("click", function () {
     var it = find(editingId);
     if (!it) return;
     if (window.confirm('Remove "' + (it.title || "this item") + '" from the list?')) {
+      editorUndoing = true;              // nothing left to write back
+      clearTimeout(editorTimer);
+      editorPending = false;
       removeItem(editingId);
+      editingId = null;
       el("editor").close();
     }
   });
 
-  el("editor-form").addEventListener("submit", function () {
-    var data = {
-      title: el("e-title").value.trim() || "Untitled item",
-      category: eCat.value,
-      cost: num(el("e-cost").value),
-      deposit: num(el("e-dep").value)
-    };
-    if (editingId) patchItem(editingId, data);
-    else addItem(data);
+  /* Done, Enter, Escape and the backdrop all keep what was typed. */
+  el("editor-form").addEventListener("submit", commitEditor);
+  el("editor").addEventListener("close", function () {
+    commitEditor();
+    editorUndoing = false;
     editingId = null;
   });
 
   el("add-phone").addEventListener("click", function () { openEditor(null); });
   el("add-desktop").addEventListener("click", function () { openEditor(null); });
 
-  /* ---------- settings ---------- */
+  /* ---------- settings: same deal, saved as you type ---------- */
 
-  el("open-settings").addEventListener("click", function () {
-    el("s-name").value = state.settings.name || "";
-    el("s-date").value = state.settings.date || "";
-    el("s-currency").value = cur();
-    el("s-budget").value = state.settings.budget ? String(state.settings.budget) : "";
-    showSheet(el("settings"));
-  });
+  var settingsBefore = null;
+  var settingsTimer = null;
+  var settingsPending = false;
+  var settingsUndoing = false;
 
-  el("s-cancel").addEventListener("click", function () { el("settings").close(); });
-
-  el("settings-form").addEventListener("submit", function () {
+  function commitSettings() {
+    clearTimeout(settingsTimer);
+    settingsTimer = null;
+    if (!settingsPending || settingsUndoing) { settingsPending = false; return; }
+    settingsPending = false;
     saveSettings({
       name: el("s-name").value.trim() || "Our Wedding",
       date: el("s-date").value,
       currency: el("s-currency").value.trim() || "RM",
       budget: num(el("s-budget").value)
     });
+  }
+
+  function touchSettings() {
+    settingsPending = true;
+    clearTimeout(settingsTimer);
+    settingsTimer = setTimeout(commitSettings, 400);
+  }
+
+  el("open-settings").addEventListener("click", function () {
+    clearTimeout(settingsTimer);
+    settingsTimer = null;
+    settingsPending = false;
+    settingsUndoing = false;
+    settingsBefore = {
+      name: state.settings.name,
+      date: state.settings.date,
+      currency: state.settings.currency,
+      budget: state.settings.budget
+    };
+
+    el("s-name").value = state.settings.name || "";
+    el("s-date").value = state.settings.date || "";
+    el("s-currency").value = cur();
+    el("s-budget").value = state.settings.budget ? String(state.settings.budget) : "";
+
+    showSheet(el("settings"));
+  });
+
+  ["s-name", "s-date", "s-currency", "s-budget"].forEach(function (id) {
+    el(id).addEventListener("input", touchSettings);
+    el(id).addEventListener("change", touchSettings);
+    el(id).addEventListener("blur", commitSettings);
+  });
+
+  el("s-cancel").addEventListener("click", function () {
+    settingsUndoing = true;
+    clearTimeout(settingsTimer);
+    settingsTimer = null;
+    settingsPending = false;
+    if (settingsBefore) saveSettings(settingsBefore);
+    el("settings").close();
+  });
+
+  el("settings-form").addEventListener("submit", commitSettings);
+  el("settings").addEventListener("close", function () {
+    commitSettings();
+    settingsUndoing = false;
   });
 
   /* ---------- files ---------- */
