@@ -1186,19 +1186,129 @@
 
   function renderAll() { renderHeader(); renderSummary(); renderList(); }
 
-  function renderHeader() {
-    var name = state.settings.name || "Our Wedding";
-    el("event-name").textContent = name;
-    document.title = name === "Our Wedding" ? "Wedding Ledger" : name + " · Wedding Ledger";
-
-    var c = el("countdown");
+  function daysToWedding() {
     var d = state.settings.date;
-    if (!d) { c.hidden = true; return; }
+    if (!d) return null;
     var target = new Date(d + "T00:00:00");
-    if (isNaN(target.getTime())) { c.hidden = true; return; }
+    if (isNaN(target.getTime())) return null;
     var today = new Date();
     today.setHours(0, 0, 0, 0);
-    var days = Math.round((target - today) / 86400000);
+    return Math.round((target - today) / 86400000);
+  }
+
+  /* ---------- the counting icon ---------- */
+
+  var iconLink = document.querySelector('link[rel="icon"]');
+  var lastIconKey = null;
+
+  function drawIcon(days) {
+    var S = 128;
+    var c = document.createElement("canvas");
+    c.width = S;
+    c.height = S;
+    var g = c.getContext && c.getContext("2d");
+    if (!g) return null;
+
+    g.fillStyle = "#0E5C43";
+    g.fillRect(0, 0, S, S);
+
+    /* No date set, the day itself, or a date gone by: show the ring. */
+    if (days === null || days <= 0) {
+      g.strokeStyle = days === 0 ? "#CFA25A" : "#FBFCFA";
+      g.lineWidth = S * 0.075;
+      g.beginPath();
+      g.arc(S / 2, S * 0.575, S * 0.25, 0, Math.PI * 2);
+      g.stroke();
+      g.fillStyle = "#CFA25A";
+      g.beginPath();
+      g.moveTo(S / 2, S * 0.16);
+      g.lineTo(S * 0.60, S * 0.30);
+      g.lineTo(S * 0.40, S * 0.30);
+      g.closePath();
+      g.fill();
+      return c.toDataURL("image/png");
+    }
+
+    /* Counting down: the number as large as it will go, so it survives 16px.
+       Past two digits the word is unreadable at tab size, so the number takes
+       the whole tile instead. */
+    var label = String(days);
+    var wide = label.length >= 3;
+    var face = 'px "IBM Plex Mono", ui-monospace, Menlo, monospace';
+    var size = wide ? S * 0.62 : label.length === 2 ? S * 0.66 : S * 0.74;
+
+    g.fillStyle = "#FBFCFA";
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.font = "600 " + size + face;
+
+    /* Shrink to fit so a four-figure countdown can't run off the tile. */
+    var maxW = S * 0.84;
+    var w = g.measureText(label).width;
+    if (w > maxW) {
+      size = size * (maxW / w);
+      g.font = "600 " + size + face;
+    }
+
+    g.fillText(label, S / 2, wide ? S * 0.52 : S * 0.43);
+
+    if (!wide) {
+      g.fillStyle = "#CFA25A";
+      g.font = "700 " + S * 0.145 + 'px "Instrument Sans", system-ui, sans-serif';
+      g.fillText(days === 1 ? "DAY" : "DAYS", S / 2, S * 0.815);
+    }
+
+    return c.toDataURL("image/png");
+  }
+
+  function updateIcon() {
+    var days = daysToWedding();
+    var key = String(days);
+    if (key === lastIconKey) return;
+    lastIconKey = key;
+
+    try {
+      var url = drawIcon(days);
+      if (url && iconLink) iconLink.href = url;
+    } catch (e) { /* canvas unavailable: the static icon stays */ }
+
+    /* On an installed app this puts the number on the icon itself. */
+    try {
+      if (days !== null && days > 0 && navigator.setAppBadge) {
+        var p = navigator.setAppBadge(days);
+        if (p && p.catch) p.catch(function () {});
+      } else if (navigator.clearAppBadge) {
+        var q = navigator.clearAppBadge();
+        if (q && q.catch) q.catch(function () {});
+      }
+    } catch (e) { /* not supported here */ }
+  }
+
+  /* Redraw once the webfonts land, and again if the page is left open overnight. */
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function () { lastIconKey = null; updateIcon(); });
+  }
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") updateIcon();
+  });
+
+  function renderHeader() {
+    var name = state.settings.name || "Our Wedding";
+    var days = daysToWedding();
+
+    el("event-name").textContent = name;
+
+    var base = name === "Our Wedding" ? "Wedding Ledger" : name + " · Wedding Ledger";
+    document.title = days !== null && days > 0
+      ? days + (days === 1 ? " day" : " days") + " · " + base
+      : base;
+
+    updateIcon();
+
+    var c = el("countdown");
+    if (days === null) { c.hidden = true; return; }
+
+    var target = new Date(state.settings.date + "T00:00:00");
     var pretty = target.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
     c.textContent = "";
     c.appendChild(document.createTextNode(pretty + " · "));
