@@ -1391,6 +1391,16 @@
 
   /* ---- live updates from the other phone ---- */
 
+  /* Row-level security applies to the realtime socket too: without the
+     signed-in token it connects happily and then delivers nothing. */
+  async function armRealtime() {
+    try {
+      var got = await sb.auth.getSession();
+      var token = got.data && got.data.session && got.data.session.access_token;
+      if (token && sb.realtime && sb.realtime.setAuth) await sb.realtime.setAuth(token);
+    } catch (e) { /* subscribe anyway; it may still work */ }
+  }
+
   function subscribe() {
     if (!sb) return;
     if (channel) { try { sb.removeChannel(channel); } catch (e) {} }
@@ -1398,7 +1408,13 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "ledger" }, function (payload) {
         applyRow(payload.new || payload.old);
       })
-      .subscribe();
+      .subscribe(function (status) {
+        if (status === "SUBSCRIBED") {
+          if (!Object.keys(outbox).length) setSync("Live · you both see this");
+        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          setSync("Live updates dropped — reload to reconnect", "warn");
+        }
+      });
   }
 
   /* ---- mutations ---- */
@@ -1541,6 +1557,7 @@
       renderAll();
       setSync("Offline — showing your last copy", "warn");
     }
+    await armRealtime();
     subscribe();
     flushOutbox();
   }
@@ -1557,6 +1574,12 @@
 
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
       auth: { persistSession: true, autoRefreshToken: true }
+    });
+
+    sb.auth.onAuthStateChange(function (event, s) {
+      if (s && s.access_token && sb.realtime && sb.realtime.setAuth) {
+        try { sb.realtime.setAuth(s.access_token); } catch (e) {}
+      }
     });
 
     try {
