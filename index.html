@@ -1,0 +1,1563 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wedding Ledger</title>
+<meta name="description" content="Track every wedding item, its cost, the deposit you've paid, and what's still owed against your budget.">
+<meta name="theme-color" content="#F2F5F0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0D1411" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Wedding Ledger">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='20' r='8.5' fill='none' stroke='%230E5C43' stroke-width='3'/%3E%3Cpath d='M16 3.5l4.5 5.5h-9z' fill='%238F6620'/%3E%3C/svg%3E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --bg: #F2F5F0;
+    --surface: #FBFCFA;
+    --surface-2: #E7ECE4;
+    --line: #D6DDD1;
+    --line-soft: #E4EADF;
+    --ink: #16221C;
+    --ink-2: #5C6B61;
+    --ink-3: #8A9790;
+    --accent: #0E5C43;
+    --accent-ink: #FBFCFA;
+    --accent-soft: #D6E6DD;
+    --brass: #8F6620;
+    --brass-soft: #EFE3CC;
+    --bad: #9E3527;
+    --bad-soft: #F2DAD5;
+    --dock: rgba(251, 252, 250, .93);
+    --shadow: 0 1px 2px rgba(22, 34, 28, .05), 0 8px 24px -16px rgba(22, 34, 28, .28);
+    --lift: 0 -2px 16px -6px rgba(22, 34, 28, .22);
+
+    --font-display: "Bodoni Moda", "Didot", Georgia, serif;
+    --font-body: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+    --tap: 44px;
+    --safe-b: env(safe-area-inset-bottom, 0px);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0D1411;
+      --surface: #15201A;
+      --surface-2: #1D2922;
+      --line: #2B382F;
+      --line-soft: #232F28;
+      --ink: #E8EFE9;
+      --ink-2: #94A49A;
+      --ink-3: #6D7D74;
+      --accent: #4FAE8A;
+      --accent-ink: #08110D;
+      --accent-soft: #1C332A;
+      --brass: #CFA25A;
+      --brass-soft: #2E2718;
+      --bad: #DE7462;
+      --bad-soft: #33201C;
+      --dock: rgba(21, 32, 26, .94);
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px -16px rgba(0, 0, 0, .8);
+      --lift: 0 -2px 18px -6px rgba(0, 0, 0, .7);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #0D1411;
+    --surface: #15201A;
+    --surface-2: #1D2922;
+    --line: #2B382F;
+    --line-soft: #232F28;
+    --ink: #E8EFE9;
+    --ink-2: #94A49A;
+    --ink-3: #6D7D74;
+    --accent: #4FAE8A;
+    --accent-ink: #08110D;
+    --accent-soft: #1C332A;
+    --brass: #CFA25A;
+    --brass-soft: #2E2718;
+    --bad: #DE7462;
+    --bad-soft: #33201C;
+    --dock: rgba(21, 32, 26, .94);
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px -16px rgba(0, 0, 0, .8);
+    --lift: 0 -2px 18px -6px rgba(0, 0, 0, .7);
+  }
+
+  * { box-sizing: border-box; }
+
+  /* Class rules below set display, which would otherwise beat the hidden attribute. */
+  [hidden] { display: none !important; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    margin: 0;
+    overscroll-behavior-y: contain;
+  }
+
+  button, a, .row { touch-action: manipulation; }
+
+  .page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: max(16px, env(safe-area-inset-top, 0px)) 16px calc(96px + var(--safe-b));
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  /* ---------- notice ---------- */
+
+  .notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: var(--brass-soft);
+    color: var(--brass);
+    font-size: 13.5px;
+    line-height: 1.45;
+    border: 1px solid color-mix(in srgb, var(--brass) 26%, transparent);
+  }
+
+  .notice b { display: block; font-weight: 600; }
+
+  /* ---------- masthead ---------- */
+
+  .masthead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 14px;
+  }
+
+  .eyebrow {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 4px;
+  }
+
+  .masthead h1 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(26px, 7vw, 40px);
+    line-height: 1.08;
+    letter-spacing: -.01em;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  .masthead .countdown { font-size: 13px; color: var(--ink-2); margin: 6px 0 0; }
+  .masthead .countdown b { color: var(--brass); font-weight: 600; }
+
+  /* ---------- buttons ---------- */
+
+  button {
+    font-family: inherit;
+    font-size: 15px;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: var(--tap);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    padding: 0 16px;
+    font-weight: 500;
+  }
+
+  .btn:hover { border-color: var(--ink-3); }
+  .btn:active { background: var(--surface-2); }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: var(--tap);
+    border: 1px solid transparent;
+    background: var(--accent);
+    color: var(--accent-ink);
+    padding: 0 20px;
+    font-weight: 600;
+  }
+
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-primary:active { filter: brightness(.92); }
+
+  .btn-danger {
+    border: 1px solid transparent;
+    background: none;
+    color: var(--bad);
+    min-height: var(--tap);
+    padding: 0 12px;
+    font-weight: 500;
+  }
+
+  .btn-danger:hover, .btn-danger:active { background: var(--bad-soft); }
+
+  .btn-icon {
+    width: var(--tap);
+    height: var(--tap);
+    padding: 0;
+    flex: none;
+    font-size: 19px;
+    line-height: 1;
+  }
+
+  .btn-quiet {
+    border: none;
+    background: none;
+    color: var(--ink-2);
+    min-height: var(--tap);
+    padding: 0 10px;
+    font-size: 13px;
+  }
+
+  .btn-quiet:hover { color: var(--ink); }
+
+  :is(button, input, select, .row):focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* ---------- headline ---------- */
+
+  .headline {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: 18px 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .headline-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .headline-figure {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(26px, 8.4vw, 48px);
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: -.02em;
+    margin: 6px 0 0;
+    color: var(--accent);
+  }
+
+  .headline-figure.over { color: var(--bad); }
+  .headline-note { font-size: 13.5px; color: var(--ink-2); margin: 8px 0 0; }
+
+  .rail {
+    display: flex;
+    height: 12px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: var(--surface-2);
+    border: 1px solid var(--line-soft);
+  }
+
+  .rail span { display: block; height: 100%; transition: width .35s ease; }
+  .rail .seg-paid { background: var(--accent); }
+  .rail .seg-due { background: var(--accent); opacity: .34; }
+  .rail .seg-over { background: var(--bad); }
+
+  .rail-key {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    font-size: 12.5px;
+    color: var(--ink-2);
+  }
+
+  .rail-key > span { display: inline-flex; align-items: center; gap: 7px; }
+  .rail-key b { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 500; }
+
+  .swatch { width: 9px; height: 9px; border-radius: 2px; background: var(--accent); flex: none; }
+  .swatch.due { opacity: .34; }
+  .swatch.free { background: var(--surface-2); border: 1px solid var(--line); }
+  .swatch.over { background: var(--bad); }
+
+  /* ---------- tiles ---------- */
+
+  .tiles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 0;
+  }
+
+  .tiles .tile:nth-child(5) { grid-column: 1 / -1; }
+
+  .tile {
+    background: var(--surface);
+    padding: 12px 14px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .tile dt {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .tile dd {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(14.5px, 4.6vw, 19px);
+    font-weight: 500;
+    letter-spacing: -.01em;
+  }
+
+  .tile dd .cur { font-size: 11.5px; color: var(--ink-3); margin-right: 3px; }
+  .tile .hint { font-size: 11.5px; color: var(--ink-3); line-height: 1.3; }
+  .tile dd.neg { color: var(--bad); }
+
+  /* ---------- ledger ---------- */
+
+  .ledger-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .ledger-head h2 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 22px;
+    margin: 0;
+  }
+
+  .ledger-head .count { font-size: 13px; color: var(--ink-3); margin-right: auto; }
+  #add-desktop { display: none; }
+
+  .ledger {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .colhead {
+    display: none;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface-2);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .colhead .t-r { text-align: right; }
+
+  .row {
+    display: grid;
+    width: 100%;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--line-soft);
+    border-radius: 0;
+    padding: 13px 12px 13px 16px;
+    min-height: 68px;
+    align-items: center;
+    gap: 3px 10px;
+    grid-template-columns: minmax(0, 1fr) auto 12px;
+    grid-template-areas:
+      "title bal chev"
+      "meta  sub chev";
+  }
+
+  .row:last-child { border-bottom: none; }
+  .row:hover { background: color-mix(in srgb, var(--surface-2) 45%, transparent); }
+  .row:active { background: var(--surface-2); }
+
+  .r-title {
+    grid-area: title;
+    font-weight: 500;
+    font-size: 15.5px;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .r-meta { grid-area: meta; display: flex; align-items: center; gap: 8px; min-width: 0; }
+
+  .r-cat {
+    font-size: 12.5px;
+    color: var(--ink-3);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .r-bal {
+    grid-area: bal;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 16px;
+    font-weight: 500;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .r-bal.settled { color: var(--ink-3); }
+  .r-bal.credit { color: var(--brass); }
+
+  .r-sub {
+    grid-area: sub;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 11.5px;
+    color: var(--ink-3);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .r-cost { grid-area: cost; }
+  .r-dep { grid-area: dep; }
+
+  .r-cost, .r-dep {
+    display: none;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 14.5px;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .r-dep.zero { color: var(--ink-3); }
+
+  .chev { grid-area: chev; color: var(--ink-3); font-size: 17px; line-height: 1; text-align: center; }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .03em;
+    padding: 2px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+    flex: none;
+  }
+
+  .pill::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+  .pill-unpaid { background: var(--surface-2); color: var(--ink-2); }
+  .pill-part { background: var(--brass-soft); color: var(--brass); }
+  .pill-settled { background: var(--accent-soft); color: var(--accent); }
+
+  /* ---------- empty ---------- */
+
+  .empty {
+    padding: 36px 22px 32px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .empty p { margin: 0; color: var(--ink-2); max-width: 40ch; font-size: 14.5px; text-wrap: balance; }
+  .empty .mark { font-family: var(--font-display); font-size: 28px; color: var(--brass); line-height: 1; }
+
+  /* ---------- dock ---------- */
+
+  .dock {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 16px calc(10px + var(--safe-b));
+    background: var(--dock);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid var(--line);
+    box-shadow: var(--lift);
+  }
+
+  .dock-figure { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+
+  .dock-figure .k {
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .dock-figure .v {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(14px, 4.4vw, 17px);
+    font-weight: 500;
+    color: var(--accent);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .dock-figure .v.over { color: var(--bad); }
+
+  .dock .btn-primary { flex: none; white-space: nowrap; padding: 0 16px; }
+
+  /* ---------- footer ---------- */
+
+  .footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 12.5px;
+    color: var(--ink-3);
+  }
+
+  .sync { display: inline-flex; align-items: center; gap: 7px; }
+
+  .sync::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex: none;
+  }
+
+  .sync.warn::before { background: var(--bad); }
+
+  /* ---------- sheets ---------- */
+
+  dialog {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    padding: 0;
+    box-shadow: 0 -8px 40px -12px rgba(0, 0, 0, .4);
+    width: 100%;
+    max-width: 100%;
+    max-height: 92dvh;
+    margin: auto 0 0;
+    border-radius: 18px 18px 0 0;
+    border-bottom: none;
+    animation: sheet-up .22s cubic-bezier(.22, .8, .3, 1);
+  }
+
+  /* display:flex above would otherwise show a closed dialog */
+  dialog:not([open]) { display: none; }
+
+  @keyframes sheet-up { from { transform: translateY(14px); opacity: .4; } }
+
+  dialog::backdrop { background: rgba(12, 20, 16, .5); }
+
+  .grab {
+    width: 38px;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--line);
+    margin: 10px auto 0;
+    flex: none;
+  }
+
+  .sheet {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 0 0 var(--safe-b);
+  }
+
+  /* fields scroll; the actions below stay put, so Save is always in reach */
+  .sheet-body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 12px 18px 16px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .sheet h2 { font-family: var(--font-display); font-weight: 400; font-size: 23px; margin: 0; }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+
+  .clabel {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  input, select {
+    font-family: inherit;
+    font-size: 16px; /* 16px keeps iOS from zooming on focus */
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 0 12px;
+    height: 48px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  select { -webkit-appearance: none; appearance: none; padding-right: 34px; cursor: pointer; }
+
+  .select-wrap { position: relative; }
+
+  .select-wrap::after {
+    content: "\25BE";
+    position: absolute;
+    right: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--ink-3);
+    pointer-events: none;
+    font-size: 13px;
+  }
+
+  select option { background: var(--surface); color: var(--ink); }
+  input::placeholder { color: var(--ink-3); }
+  input:focus, select:focus { border-color: var(--accent); outline: none; }
+
+  .money-in {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    padding-left: 42px;
+  }
+
+  .money-wrap { position: relative; }
+
+  .money-wrap .prefix {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--ink-3);
+    font-size: 13px;
+    pointer-events: none;
+  }
+
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .readout {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: var(--surface-2);
+  }
+
+  .readout .k { font-size: 12.5px; color: var(--ink-2); }
+
+  .readout .v {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 17px;
+    font-weight: 500;
+  }
+
+  .subhead {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    border-top: 1px solid var(--line-soft);
+    padding-top: 14px;
+  }
+
+  .backup-note { font-size: 12.5px; color: var(--ink-3); line-height: 1.45; margin: -6px 0 0; }
+
+  .sheet-actions {
+    display: flex;
+    gap: 10px;
+    flex: none;
+    padding: 12px 18px;
+    border-top: 1px solid var(--line-soft);
+    background: var(--surface);
+  }
+
+  .sheet-actions .btn, .sheet-actions .btn-primary { flex: 1; }
+
+  .sheet-foot {
+    display: flex;
+    justify-content: center;
+    flex: none;
+    padding: 0 18px 10px;
+    background: var(--surface);
+  }
+
+  /* ---------- wide screens ---------- */
+
+  @media (min-width: 720px) {
+    .page { padding: 28px 24px 60px; gap: 26px; }
+    .masthead { align-items: flex-end; padding-bottom: 18px; }
+    .headline { padding: 22px 24px 24px; }
+    .tiles { grid-template-columns: repeat(5, 1fr); }
+    .tiles .tile:nth-child(5) { grid-column: auto; }
+    .tile { padding: 14px 16px 16px; }
+    .tile dd { font-size: 19px; }
+
+    #add-desktop { display: inline-flex; }
+    .dock { display: none; }
+    .colhead { display: grid; }
+
+    .colhead, .row {
+      grid-template-columns: minmax(0, 1fr) 118px 118px 132px;
+      grid-template-areas:
+        "title cost dep bal"
+        "meta  cost dep bal";
+      gap: 3px 14px;
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+
+    .colhead { grid-template-areas: "title cost dep bal"; }
+    .r-cost, .r-dep { display: block; }
+    .r-sub, .chev { display: none; }
+    .r-bal { font-size: 15px; }
+
+    dialog {
+      width: min(440px, calc(100vw - 32px));
+      max-height: min(88vh, 760px);
+      margin: auto;
+      border-radius: 16px;
+      border-bottom: 1px solid var(--line);
+      animation: none;
+    }
+
+    .grab { display: none; }
+    .sheet-body { padding: 20px 22px 18px; }
+    .sheet-actions { padding: 14px 22px; }
+    .sheet-foot { padding: 0 22px 12px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="notice" id="notice" hidden>
+    <span>
+      <b id="notice-title">Changes aren't being saved</b>
+      <span id="notice-body">This browser is blocking storage.</span>
+    </span>
+  </div>
+
+  <header class="masthead">
+    <div>
+      <p class="eyebrow">Wedding budget</p>
+      <h1 id="event-name">Our Wedding</h1>
+      <p class="countdown" id="countdown" hidden></p>
+    </div>
+    <button class="btn btn-icon" id="open-settings" type="button" aria-label="Budget and details" title="Budget &amp; details">&#9881;</button>
+  </header>
+
+  <section class="headline">
+    <div>
+      <span class="headline-label" id="headline-label">Budget remaining</span>
+      <p class="headline-figure" id="headline-figure">&mdash;</p>
+      <p class="headline-note" id="headline-note">Set a budget to see how much room you have left.</p>
+    </div>
+
+    <div class="rail" role="img" aria-label="Budget breakdown">
+      <span class="seg-paid" id="seg-paid" style="width:0%"></span>
+      <span class="seg-due" id="seg-due" style="width:0%"></span>
+      <span class="seg-over" id="seg-over" style="width:0%"></span>
+    </div>
+
+    <div class="rail-key">
+      <span><i class="swatch"></i> Paid <b id="key-paid">&mdash;</b></span>
+      <span><i class="swatch due"></i> Still owed <b id="key-due">&mdash;</b></span>
+      <span id="key-free-wrap"><i class="swatch free"></i> Unspoken for <b id="key-free">&mdash;</b></span>
+      <span id="key-over-wrap" hidden><i class="swatch over"></i> Over budget <b id="key-over">&mdash;</b></span>
+    </div>
+  </section>
+
+  <dl class="tiles">
+    <div class="tile">
+      <dt>Budget</dt>
+      <dd id="t-budget">&mdash;</dd>
+      <span class="hint">Willing to spend</span>
+    </div>
+    <div class="tile">
+      <dt>Total cost</dt>
+      <dd id="t-cost">&mdash;</dd>
+      <span class="hint">Booked so far</span>
+    </div>
+    <div class="tile">
+      <dt>Deposits paid</dt>
+      <dd id="t-paid">&mdash;</dd>
+      <span class="hint">Money already out</span>
+    </div>
+    <div class="tile">
+      <dt>Balance to pay</dt>
+      <dd id="t-due">&mdash;</dd>
+      <span class="hint">Owed to vendors</span>
+    </div>
+    <div class="tile">
+      <dt>Cash in hand</dt>
+      <dd id="t-cash">&mdash;</dd>
+      <span class="hint">Budget minus what you've paid</span>
+    </div>
+  </dl>
+
+  <div class="ledger-head">
+    <h2>The list</h2>
+    <span class="count" id="item-count"></span>
+    <button class="btn-primary" id="add-desktop" type="button">Add item</button>
+  </div>
+
+  <section class="ledger" style="margin-top:-8px">
+    <div class="colhead">
+      <span>Item</span>
+      <span class="t-r">Cost</span>
+      <span class="t-r">Deposit</span>
+      <span class="t-r">Balance</span>
+    </div>
+    <div id="list"></div>
+  </section>
+
+  <footer class="footer">
+    <span class="sync" id="sync">Saved on this device</span>
+    <button class="btn-quiet" id="export" type="button">Download as CSV</button>
+  </footer>
+</div>
+
+<div class="dock" id="dock">
+  <span class="dock-figure">
+    <span class="k" id="dock-key">Budget remaining</span>
+    <span class="v" id="dock-value">&mdash;</span>
+  </span>
+  <button class="btn-primary" id="add-phone" type="button">&#43;&nbsp; Add item</button>
+</div>
+
+<dialog id="editor" aria-labelledby="editor-title">
+  <div class="grab"></div>
+  <form class="sheet" id="editor-form" method="dialog" autocomplete="off">
+   <div class="sheet-body">
+    <h2 id="editor-title">Add item</h2>
+
+    <div class="field">
+      <label class="clabel" for="e-title">Item</label>
+      <input id="e-title" placeholder="Photographer, catering, pelamin&hellip;"
+             autocapitalize="words" enterkeyhint="next" required>
+    </div>
+
+    <div class="field">
+      <label class="clabel" for="e-cat">Category</label>
+      <span class="select-wrap"><select id="e-cat"></select></span>
+    </div>
+
+    <div class="duo">
+      <div class="field">
+        <label class="clabel" for="e-cost">Cost</label>
+        <span class="money-wrap">
+          <i class="prefix" id="e-cost-cur">RM</i>
+          <input id="e-cost" class="money-in" inputmode="decimal" enterkeyhint="next" placeholder="0.00">
+        </span>
+      </div>
+      <div class="field">
+        <label class="clabel" for="e-dep">Deposit paid</label>
+        <span class="money-wrap">
+          <i class="prefix" id="e-dep-cur">RM</i>
+          <input id="e-dep" class="money-in" inputmode="decimal" enterkeyhint="done" placeholder="0.00">
+        </span>
+      </div>
+    </div>
+
+    <div class="readout">
+      <span class="k">Balance to pay</span>
+      <span class="v" id="e-balance">0.00</span>
+    </div>
+
+    <button class="btn" type="button" id="e-settle">Mark fully paid</button>
+   </div>
+
+    <div class="sheet-actions">
+      <button class="btn" type="button" id="e-cancel">Cancel</button>
+      <button class="btn-primary" type="submit" id="e-save">Save</button>
+    </div>
+
+    <div class="sheet-foot" id="e-delete-wrap" hidden>
+      <button class="btn-danger" type="button" id="e-delete">Remove this item</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="settings" aria-labelledby="settings-title">
+  <div class="grab"></div>
+  <form class="sheet" id="settings-form" method="dialog" autocomplete="off">
+   <div class="sheet-body">
+    <h2 id="settings-title">Budget &amp; details</h2>
+
+    <div class="field">
+      <label class="clabel" for="s-name">Event name</label>
+      <input id="s-name" placeholder="Our Wedding" autocapitalize="words" enterkeyhint="next">
+    </div>
+
+    <div class="field">
+      <label class="clabel" for="s-date">Wedding date (optional)</label>
+      <input id="s-date" type="date">
+    </div>
+
+    <div class="duo">
+      <div class="field">
+        <label class="clabel" for="s-currency">Currency</label>
+        <input id="s-currency" placeholder="RM" enterkeyhint="next">
+      </div>
+      <div class="field">
+        <label class="clabel" for="s-budget">Total budget</label>
+        <input id="s-budget" class="money-in" inputmode="decimal" enterkeyhint="done" placeholder="0.00">
+      </div>
+    </div>
+
+    <div class="subhead">Moving to another phone</div>
+    <p class="backup-note">Your list is kept in this browser only. Save a backup file to carry it to another device, or to keep a copy somewhere safe.</p>
+    <button class="btn" type="button" id="s-backup">Save a backup file</button>
+    <button class="btn" type="button" id="s-restore">Restore from a backup</button>
+    <input type="file" id="s-restore-file" accept="application/json,.json" hidden>
+   </div>
+
+    <div class="sheet-actions">
+      <button class="btn" type="button" id="s-cancel">Cancel</button>
+      <button class="btn-primary" type="submit">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(function () {
+  "use strict";
+
+  var CATEGORIES = [
+    "Venue", "Catering", "Attire", "Hair & makeup", "Photo & video",
+    "Decor & pelamin", "Hantaran", "Cards & gifts", "Entertainment",
+    "Transport", "Honeymoon", "Other"
+  ];
+
+  var STARTER = [
+    ["Hall / venue booking", "Venue"],
+    ["Catering", "Catering"],
+    ["Bride's outfit", "Attire"],
+    ["Groom's outfit", "Attire"],
+    ["Hair & makeup", "Hair & makeup"],
+    ["Photographer", "Photo & video"],
+    ["Videographer", "Photo & video"],
+    ["Pelamin & decoration", "Decor & pelamin"],
+    ["Hantaran", "Hantaran"],
+    ["Wedding cake", "Catering"],
+    ["Invitation cards", "Cards & gifts"],
+    ["Door gifts", "Cards & gifts"],
+    ["Kompang / emcee", "Entertainment"]
+  ];
+
+  var LS_KEY = "wedding-ledger-v1";
+
+  var el = function (id) { return document.getElementById(id); };
+  var list = el("list");
+
+  function defaults() {
+    return { name: "Our Wedding", date: "", currency: "RM", budget: 0 };
+  }
+
+  var state = { settings: defaults(), items: [] };
+  var editingId = null;
+  var storageOK = true;
+
+  /* ---------- numbers ---------- */
+
+  function num(v) {
+    var n = parseFloat(String(v == null ? "" : v).replace(/[^0-9.\-]/g, ""));
+    return isFinite(n) ? n : 0;
+  }
+
+  function fmt(n) {
+    var neg = n < 0;
+    return (neg ? "-" : "") + Math.abs(n).toLocaleString("en-US", {
+      minimumFractionDigits: 2, maximumFractionDigits: 2
+    });
+  }
+
+  function cur() { return state.settings.currency || "RM"; }
+  function money(n) { return cur() + " " + fmt(n); }
+
+  function totals() {
+    var cost = 0, paid = 0;
+    for (var i = 0; i < state.items.length; i++) {
+      cost += num(state.items[i].cost);
+      paid += num(state.items[i].deposit);
+    }
+    var budget = num(state.settings.budget);
+    return {
+      budget: budget, cost: cost, paid: paid,
+      due: cost - paid, remaining: budget - cost, cash: budget - paid
+    };
+  }
+
+  function newId() {
+    return "i" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  function find(id) {
+    for (var i = 0; i < state.items.length; i++) {
+      if (state.items[i].id === id) return state.items[i];
+    }
+    return null;
+  }
+
+  function normalizeItem(v) {
+    return {
+      id: v && v.id ? String(v.id) : newId(),
+      title: v && v.title ? String(v.title) : "",
+      category: v && v.category ? String(v.category) : "Other",
+      cost: num(v && v.cost),
+      deposit: num(v && v.deposit)
+    };
+  }
+
+  /* ---------- storage ---------- */
+
+  function setSync(text, kind) {
+    var s = el("sync");
+    s.textContent = text;
+    s.classList.toggle("warn", kind === "warn");
+  }
+
+  function showNotice(title, body) {
+    el("notice-title").textContent = title;
+    el("notice-body").textContent = body;
+    el("notice").hidden = false;
+  }
+
+  function storageFailed() {
+    storageOK = false;
+    setSync("Not saving", "warn");
+    showNotice("Changes aren't being saved",
+      "This browser is blocking storage, which usually means private browsing. Your list will be gone when you close the tab.");
+  }
+
+  function loadLocal() {
+    var raw;
+    try { raw = localStorage.getItem(LS_KEY); }
+    catch (e) { storageFailed(); return; }
+    if (!raw) return;
+    try {
+      var saved = JSON.parse(raw);
+      if (saved && saved.settings) {
+        var d = defaults();
+        for (var k in d) {
+          state.settings[k] = saved.settings[k] !== undefined ? saved.settings[k] : d[k];
+        }
+      }
+      if (saved && Array.isArray(saved.items)) state.items = saved.items.map(normalizeItem);
+    } catch (e) { /* corrupt entry: keep the defaults rather than wiping it blindly */ }
+  }
+
+  function saveLocal() {
+    if (!storageOK) return;
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify(state));
+      setSync("Saved on this device");
+    } catch (e) {
+      storageFailed();
+    }
+  }
+
+  /* ---------- mutations ---------- */
+
+  function addItem(data) {
+    state.items.push({
+      id: newId(),
+      title: data.title,
+      category: data.category || "Other",
+      cost: num(data.cost),
+      deposit: num(data.deposit)
+    });
+    renderSummary();
+    renderList();
+    saveLocal();
+  }
+
+  function patchItem(id, patch) {
+    var it = find(id);
+    if (!it) return;
+    for (var k in patch) it[k] = patch[k];
+    renderSummary();
+    renderList();
+    saveLocal();
+  }
+
+  function removeItem(id) {
+    state.items = state.items.filter(function (i) { return i.id !== id; });
+    renderSummary();
+    renderList();
+    saveLocal();
+  }
+
+  function saveSettings(patch) {
+    for (var k in patch) state.settings[k] = patch[k];
+    renderAll();
+    saveLocal();
+  }
+
+  function seed() {
+    STARTER.forEach(function (s) {
+      state.items.push({ id: newId(), title: s[0], category: s[1], cost: 0, deposit: 0 });
+    });
+    renderSummary();
+    renderList();
+    saveLocal();
+  }
+
+  /* ---------- rendering ---------- */
+
+  function renderAll() { renderHeader(); renderSummary(); renderList(); }
+
+  function renderHeader() {
+    var name = state.settings.name || "Our Wedding";
+    el("event-name").textContent = name;
+    document.title = name === "Our Wedding" ? "Wedding Ledger" : name + " · Wedding Ledger";
+
+    var c = el("countdown");
+    var d = state.settings.date;
+    if (!d) { c.hidden = true; return; }
+    var target = new Date(d + "T00:00:00");
+    if (isNaN(target.getTime())) { c.hidden = true; return; }
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    var days = Math.round((target - today) / 86400000);
+    var pretty = target.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+    c.textContent = "";
+    c.appendChild(document.createTextNode(pretty + " · "));
+    var b = document.createElement("b");
+    if (days > 1) { b.textContent = days + " days"; c.appendChild(b); c.appendChild(document.createTextNode(" to go")); }
+    else if (days === 1) { b.textContent = "tomorrow"; c.appendChild(b); }
+    else if (days === 0) { b.textContent = "today"; c.appendChild(b); }
+    else { c.appendChild(document.createTextNode(Math.abs(days) + " days ago")); }
+    c.hidden = false;
+  }
+
+  function renderSummary() {
+    var t = totals();
+    var over = t.remaining < 0;
+    var blank = !t.budget && !t.cost;
+
+    var fig = el("headline-figure");
+    fig.classList.toggle("over", over);
+
+    if (blank) {
+      fig.textContent = "—";
+      el("headline-label").textContent = "Budget remaining";
+      el("headline-note").textContent = "Set a budget to see how much room you have left.";
+    } else if (over) {
+      el("headline-label").textContent = "Over budget by";
+      fig.textContent = money(Math.abs(t.remaining));
+      el("headline-note").textContent = "Your bookings cost more than the budget you set.";
+    } else {
+      el("headline-label").textContent = "Budget remaining";
+      fig.textContent = money(t.remaining);
+      el("headline-note").textContent = "Left to spend after everything you've booked.";
+    }
+
+    el("dock-key").textContent = over ? "Over budget by" : "Budget remaining";
+    el("dock-value").textContent = blank ? "—" : money(Math.abs(t.remaining));
+    el("dock-value").classList.toggle("over", over);
+
+    var base = Math.max(t.budget, t.cost, 1);
+    var pct = function (v) { return Math.max(0, Math.min(100, (v / base) * 100)); };
+    el("seg-paid").style.width = pct(t.paid) + "%";
+    el("seg-due").style.width = pct(Math.max(0, t.due)) + "%";
+    el("seg-over").style.width = over ? pct(Math.abs(t.remaining)) + "%" : "0%";
+
+    el("key-paid").textContent = money(t.paid);
+    el("key-due").textContent = money(Math.max(0, t.due));
+    el("key-free-wrap").hidden = over;
+    el("key-over-wrap").hidden = !over;
+    el("key-free").textContent = money(Math.max(0, t.remaining));
+    el("key-over").textContent = money(Math.abs(t.remaining));
+
+    setTile("t-budget", t.budget);
+    setTile("t-cost", t.cost);
+    setTile("t-paid", t.paid);
+    setTile("t-due", t.due);
+    setTile("t-cash", t.cash);
+    el("t-cash").classList.toggle("neg", t.cash < 0);
+
+    var n = state.items.length;
+    el("item-count").textContent = n ? n + (n === 1 ? " item" : " items") : "";
+  }
+
+  function setTile(id, value) {
+    var node = el(id);
+    node.textContent = "";
+    var c = document.createElement("span");
+    c.className = "cur";
+    c.textContent = cur();
+    node.appendChild(c);
+    node.appendChild(document.createTextNode(fmt(value)));
+  }
+
+  function statusOf(it) {
+    var cost = num(it.cost), dep = num(it.deposit);
+    if (cost > 0 && dep >= cost) return { cls: "pill-settled", text: "Settled" };
+    if (dep > 0) return { cls: "pill-part", text: "Deposit paid" };
+    return { cls: "pill-unpaid", text: "Unpaid" };
+  }
+
+  function span(cls, text) {
+    var s = document.createElement("span");
+    s.className = cls;
+    s.textContent = text;
+    return s;
+  }
+
+  function renderList() {
+    list.textContent = "";
+
+    if (!state.items.length) {
+      var empty = document.createElement("div");
+      empty.className = "empty";
+      empty.appendChild(span("mark", "❧"));
+
+      var p = document.createElement("p");
+      p.textContent = "Nothing on the list yet. Add your first item, or start from the usual wedding line-items and fill in the numbers as you book.";
+      empty.appendChild(p);
+
+      var seedBtn = document.createElement("button");
+      seedBtn.className = "btn";
+      seedBtn.type = "button";
+      seedBtn.textContent = "Start with the usual list";
+      seedBtn.addEventListener("click", seed);
+      empty.appendChild(seedBtn);
+
+      list.appendChild(empty);
+      return;
+    }
+
+    var frag = document.createDocumentFragment();
+    state.items.forEach(function (it) { frag.appendChild(buildRow(it)); });
+    list.appendChild(frag);
+  }
+
+  function buildRow(it) {
+    var cost = num(it.cost), dep = num(it.deposit), bal = cost - dep;
+    var s = statusOf(it);
+
+    var row = document.createElement("button");
+    row.className = "row";
+    row.type = "button";
+    row.dataset.id = it.id;
+    row.setAttribute("aria-label", "Edit " + (it.title || "untitled item") + ", balance " + money(bal));
+
+    row.appendChild(span("r-title", it.title || "Untitled item"));
+
+    var meta = document.createElement("span");
+    meta.className = "r-meta";
+    meta.appendChild(span("pill " + s.cls, s.text));
+    meta.appendChild(span("r-cat", it.category || "Other"));
+    row.appendChild(meta);
+
+    row.appendChild(span("r-cost", fmt(cost)));
+    row.appendChild(span("r-dep" + (dep ? "" : " zero"), fmt(dep)));
+    row.appendChild(span("r-bal" + (bal === 0 ? " settled" : bal < 0 ? " credit" : ""), fmt(bal)));
+    row.appendChild(span("r-sub", "of " + fmt(cost)));
+    row.appendChild(span("chev", "›"));
+
+    return row;
+  }
+
+  list.addEventListener("click", function (e) {
+    var row = e.target.closest(".row");
+    if (row) openEditor(row.dataset.id);
+  });
+
+  /* ---------- sheets ---------- */
+
+  function showSheet(dlg) {
+    document.body.style.overflow = "hidden";
+    dlg.showModal();
+  }
+
+  function onSheetClose() {
+    if (!document.querySelector("dialog[open]")) document.body.style.overflow = "";
+  }
+
+  el("editor").addEventListener("close", onSheetClose);
+  el("settings").addEventListener("close", onSheetClose);
+
+  /* ---------- item editor ---------- */
+
+  var eCat = el("e-cat");
+  CATEGORIES.forEach(function (c) {
+    var o = document.createElement("option");
+    o.value = c;
+    o.textContent = c;
+    eCat.appendChild(o);
+  });
+
+  function openEditor(id) {
+    editingId = id || null;
+    var it = id ? find(id) : null;
+
+    el("editor-title").textContent = it ? "Edit item" : "Add item";
+    el("e-save").textContent = it ? "Save" : "Add item";
+    el("e-title").value = it ? it.title : "";
+    el("e-cost").value = it && it.cost ? String(it.cost) : "";
+    el("e-dep").value = it && it.deposit ? String(it.deposit) : "";
+    el("e-cost-cur").textContent = cur();
+    el("e-dep-cur").textContent = cur();
+    el("e-delete-wrap").hidden = !it;
+
+    var cat = it && it.category ? it.category : "Venue";
+    if (!Array.prototype.some.call(eCat.options, function (o) { return o.value === cat; })) {
+      var extra = document.createElement("option");
+      extra.value = cat;
+      extra.textContent = cat;
+      eCat.appendChild(extra);
+    }
+    eCat.value = cat;
+
+    updateEditorBalance();
+    showSheet(el("editor"));
+
+    /* Don't auto-focus on a phone: the keyboard would cover the sheet. */
+    if (window.matchMedia("(min-width: 720px)").matches) {
+      setTimeout(function () { el("e-title").focus(); }, 30);
+    }
+  }
+
+  function updateEditorBalance() {
+    var cost = num(el("e-cost").value), dep = num(el("e-dep").value);
+    el("e-balance").textContent = money(cost - dep);
+    el("e-settle").hidden = cost > 0 && dep >= cost;
+  }
+
+  el("e-cost").addEventListener("input", updateEditorBalance);
+  el("e-dep").addEventListener("input", updateEditorBalance);
+
+  el("e-settle").addEventListener("click", function () {
+    el("e-dep").value = el("e-cost").value;
+    updateEditorBalance();
+  });
+
+  el("e-cancel").addEventListener("click", function () { el("editor").close(); });
+
+  el("e-delete").addEventListener("click", function () {
+    var it = find(editingId);
+    if (!it) return;
+    if (window.confirm('Remove "' + (it.title || "this item") + '" from the list?')) {
+      removeItem(editingId);
+      el("editor").close();
+    }
+  });
+
+  el("editor-form").addEventListener("submit", function () {
+    var data = {
+      title: el("e-title").value.trim() || "Untitled item",
+      category: eCat.value,
+      cost: num(el("e-cost").value),
+      deposit: num(el("e-dep").value)
+    };
+    if (editingId) patchItem(editingId, data);
+    else addItem(data);
+    editingId = null;
+  });
+
+  el("add-phone").addEventListener("click", function () { openEditor(null); });
+  el("add-desktop").addEventListener("click", function () { openEditor(null); });
+
+  /* ---------- settings ---------- */
+
+  el("open-settings").addEventListener("click", function () {
+    el("s-name").value = state.settings.name || "";
+    el("s-date").value = state.settings.date || "";
+    el("s-currency").value = cur();
+    el("s-budget").value = state.settings.budget ? String(state.settings.budget) : "";
+    showSheet(el("settings"));
+  });
+
+  el("s-cancel").addEventListener("click", function () { el("settings").close(); });
+
+  el("settings-form").addEventListener("submit", function () {
+    saveSettings({
+      name: el("s-name").value.trim() || "Our Wedding",
+      date: el("s-date").value,
+      currency: el("s-currency").value.trim() || "RM",
+      budget: num(el("s-budget").value)
+    });
+  });
+
+  /* ---------- files ---------- */
+
+  function downloadFile(filename, text, mime) {
+    var blob = new Blob([text], { type: mime || "text/plain;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 0);
+  }
+
+  function slug() {
+    var n = (state.settings.name || "wedding-ledger").toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    return n || "wedding-ledger";
+  }
+
+  el("s-backup").addEventListener("click", function () {
+    downloadFile(slug() + "-backup.json", JSON.stringify(state, null, 2), "application/json");
+  });
+
+  el("s-restore").addEventListener("click", function () { el("s-restore-file").click(); });
+
+  el("s-restore-file").addEventListener("change", function (e) {
+    var file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+
+    var reader = new FileReader();
+    reader.onload = function () {
+      var data;
+      try { data = JSON.parse(String(reader.result)); }
+      catch (err) { data = null; }
+
+      if (!data || !Array.isArray(data.items)) {
+        window.alert("That file doesn't look like a Wedding Ledger backup.");
+        return;
+      }
+      if (!window.confirm("Replace everything on this device with the backup? " +
+                          "It has " + data.items.length + " item" + (data.items.length === 1 ? "" : "s") + ".")) {
+        return;
+      }
+
+      var d = defaults();
+      var incoming = data.settings || {};
+      state.settings = {};
+      for (var k in d) {
+        state.settings[k] = incoming[k] !== undefined ? incoming[k] : d[k];
+      }
+      state.items = data.items.map(normalizeItem);
+
+      renderAll();
+      saveLocal();
+      el("settings").close();
+    };
+    reader.onerror = function () { window.alert("Couldn't read that file."); };
+    reader.readAsText(file);
+  });
+
+  el("export").addEventListener("click", function () {
+    var rows = [["Item", "Category", "Cost", "Deposit paid", "Balance"]];
+    state.items.forEach(function (it) {
+      rows.push([
+        it.title, it.category,
+        num(it.cost).toFixed(2),
+        num(it.deposit).toFixed(2),
+        (num(it.cost) - num(it.deposit)).toFixed(2)
+      ]);
+    });
+    var t = totals();
+    rows.push([]);
+    rows.push(["Budget", "", t.budget.toFixed(2)]);
+    rows.push(["Total cost", "", t.cost.toFixed(2)]);
+    rows.push(["Deposits paid", "", t.paid.toFixed(2)]);
+    rows.push(["Balance to pay", "", t.due.toFixed(2)]);
+    rows.push(["Budget remaining", "", t.remaining.toFixed(2)]);
+
+    var csv = rows.map(function (r) {
+      return r.map(function (c) {
+        return '"' + String(c == null ? "" : c).replace(/"/g, '""') + '"';
+      }).join(",");
+    }).join("\r\n");
+
+    /* BOM so Excel opens the accented characters correctly */
+    downloadFile(slug() + ".csv", "﻿" + csv, "text/csv;charset=utf-8");
+  });
+
+  /* ---------- go ---------- */
+
+  loadLocal();
+  renderAll();
+})();
+</script>
+</body>
+</html>
