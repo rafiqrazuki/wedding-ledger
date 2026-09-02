@@ -1077,6 +1077,10 @@
     <button class="btn" type="button" id="s-restore">Restore from a backup</button>
     <input type="file" id="s-restore-file" accept="application/json,.json" hidden>
 
+    <div class="subhead" id="s-badge-head" hidden>App icon</div>
+    <p class="backup-note" id="s-badge-note" hidden></p>
+    <button class="btn" type="button" id="s-badge" hidden>Show the countdown on the app icon</button>
+
     <div class="subhead">This device</div>
     <p class="backup-note" id="s-account">Signed in.</p>
     <button class="btn" type="button" id="s-signout">Sign out</button>
@@ -1520,6 +1524,43 @@
       btn.disabled = false;
       btn.textContent = "Sign in";
     }
+  });
+
+  /* Putting a number on an installed app's icon is a notification badge as far
+     as the phone is concerned, so iOS wants permission before it will show one.
+     The number refreshes whenever the app is opened. */
+  var badgeSupported = !!navigator.setAppBadge;
+
+  function refreshBadgeUi() {
+    var head = el("s-badge-head"), note = el("s-badge-note"), btn = el("s-badge");
+    if (!badgeSupported) { head.hidden = true; note.hidden = true; btn.hidden = true; return; }
+
+    head.hidden = false;
+    note.hidden = false;
+    var perm = (window.Notification && Notification.permission) || "granted";
+    var days = daysToWedding();
+
+    if (perm === "granted") {
+      btn.hidden = true;
+      note.textContent = (days !== null && days > 0)
+        ? "The home screen icon shows " + days + ". It refreshes each time you open the app."
+        : "Set a wedding date and the home screen icon will show the days left.";
+    } else if (perm === "denied") {
+      btn.hidden = true;
+      note.textContent = "Turned off. Allow notifications for this app in your phone's settings to put the number on the icon.";
+    } else {
+      btn.hidden = false;
+      note.textContent = "Show the days left on the home screen icon. Your phone treats that as a badge, so it will ask permission first.";
+    }
+  }
+
+  el("s-badge").addEventListener("click", async function () {
+    try {
+      if (window.Notification && Notification.requestPermission) await Notification.requestPermission();
+    } catch (e) { /* dismissed */ }
+    lastIconKey = null;
+    updateIcon();
+    refreshBadgeUi();
   });
 
   el("s-signout").addEventListener("click", async function () {
@@ -2083,6 +2124,7 @@
     el("s-currency").value = cur();
     el("s-budget").value = state.settings.budget ? String(state.settings.budget) : "";
 
+    refreshBadgeUi();
     el("s-account").textContent = signedIn
       ? "Signed in and syncing. Sign out to hand this phone to someone else."
       : "Not signed in on this device.";
