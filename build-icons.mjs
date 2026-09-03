@@ -7,18 +7,46 @@
  * commits the result; re-adding the app to a home screen then installs an icon
  * showing that day's count.
  *
- *   node build-icons.mjs                 # uses WEDDING_DATE below
- *   WEDDING_DATE=2027-03-01 node build-icons.mjs
- *   TODAY=2026-12-10 node build-icons.mjs        # for testing
+ * The date and the couple's names are read from the app itself: it publishes
+ * them to a single row that anyone may read, so the icon always agrees with
+ * what the settings sheet says. Nothing else in the ledger is exposed.
  *
- * Keep WEDDING_DATE in step with the date set inside the app — the app reads
- * its date from the database, which this build can't see.
+ *   node build-icons.mjs
+ *   WEDDING_DATE=2027-03-01 COUPLE="A & B" node build-icons.mjs   # override
+ *   TODAY=2026-12-10 node build-icons.mjs                         # for testing
  */
 import { Resvg } from "@resvg/resvg-js";
 import { readFileSync, writeFileSync } from "node:fs";
 
-const WEDDING_DATE = process.env.WEDDING_DATE || "2026-12-12";
-const COUPLE = process.env.COUPLE || "Rafiq & Lily";
+/* Fallbacks only. The real date and names come from the app itself — see
+   loadFromApp() below — so the icon can't drift away from what the app shows. */
+let WEDDING_DATE = process.env.WEDDING_DATE || "";
+let COUPLE = process.env.COUPLE || "Our Wedding";
+
+const SUPABASE_URL = "https://bmlssxfcrslhqhadqkps.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtbHNzeGZjcnNsaHFoYWRxa3BzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgzMjUyNDEsImV4cCI6MjEwMzkwMTI0MX0.2nL1hupQURyWxSyzxw5n3jnZlWHK3snrzbbmNCFgKNg";
+
+/* The app publishes just its date and display name to one row that anyone may
+   read. Nothing else in the ledger is exposed. */
+async function loadFromApp() {
+  if (process.env.WEDDING_DATE && process.env.COUPLE) return "overridden by env";
+  try {
+    const res = await fetch(
+      SUPABASE_URL + "/rest/v1/ledger?id=eq.__public_date__&select=data",
+      { headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY } }
+    );
+    if (!res.ok) return "lookup failed: HTTP " + res.status;
+    const rows = await res.json();
+    const d = rows && rows[0] && rows[0].data;
+    if (!d) return "the app has not published a date yet";
+    if (!process.env.WEDDING_DATE && d.date) WEDDING_DATE = d.date;
+    if (!process.env.COUPLE && d.couple) COUPLE = d.couple;
+    return "read from the app: " + (d.couple || "?") + ", " + (d.date || "no date");
+  } catch (e) {
+    return "lookup failed: " + e.message;
+  }
+}
+
 const SIZES = [180, 192, 512];
 const FONT = "build/IBMPlexMono-SemiBold.ttf";
 
@@ -36,6 +64,7 @@ function daysLeft() {
     ? new Date(process.env.TODAY + "T00:00:00Z")
     : new Date(Date.now() + TZ_OFFSET_MIN * 60000);
   const t = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  if (!WEDDING_DATE) return null;
   const [y, m, d] = WEDDING_DATE.split("-").map(Number);
   if (!y || !m || !d) return null;
   return Math.round((Date.UTC(y, m - 1, d) - t) / 86400000);
@@ -87,6 +116,8 @@ function countSvg(size, days) {
   ${namesEl()}
 </svg>`;
 }
+
+console.log(await loadFromApp());
 
 const days = daysLeft();
 const fontData = readFileSync(FONT);

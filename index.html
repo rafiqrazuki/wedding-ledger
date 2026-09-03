@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="Wedding Ledger">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon-180.png?d=100">
+<link rel="apple-touch-icon" href="icon-180.png?d=0">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='20' r='8.5' fill='none' stroke='%230E5C43' stroke-width='3'/%3E%3Cpath d='M16 3.5l4.5 5.5h-9z' fill='%238F6620'/%3E%3C/svg%3E">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1424,7 +1424,17 @@
     if (it) queueRow(id, itemRow(it));
   }
 
-  function pushSettings() { queueRow(SETTINGS_ROW, settingsRow()); }
+  function pushSettings() {
+    queueRow(SETTINGS_ROW, settingsRow());
+    /* A tiny row holding only the date and the display name, which the icon
+       build reads so the countdown on the app icon can't drift from this one.
+       Nothing else in the ledger is readable without signing in. */
+    queueRow("__public_date__", {
+      kind: "public",
+      date: state.settings.date || "",
+      couple: state.settings.name || "Our Wedding"
+    });
+  }
 
   async function flushOutbox() {
     if (flushing || !sb || !signedIn) return;
@@ -1664,6 +1674,9 @@
       renderAll();
       setSync("Offline — showing your last copy", "warn");
     }
+    /* Keep the icon build's copy current without waiting for a settings edit. */
+    if (state.settings.date) pushSettings();
+
     await armRealtime();
     subscribe();
     flushOutbox();

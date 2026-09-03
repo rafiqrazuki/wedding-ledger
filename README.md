@@ -47,10 +47,17 @@ TODAY=2026-12-10 node build-icons.mjs     # pretend it is another day
 
 The icon shows the ring, the days remaining, and the couple's names.
 
-**The date and the names live in two places.** The app reads both from the
-database; the icon build has its own copies (`WEDDING_DATE` and `COUPLE` in
-`build-icons.mjs`), because the build has no way to read the database. Change
-either in the app and change it there too, or the icon will disagree.
+**The date and names come from the app's own settings.** Saving settings writes
+a `__public_date__` row holding only the date and the display name, and one RLS
+policy lets anyone read that single row, so the icon build can pick it up:
+
+```sql
+create policy "anyone may read the wedding date" on public.ledger
+  for select to anon using (id = '__public_date__');
+```
+
+Everything else stays behind the sign-in. `WEDDING_DATE` and `COUPLE` remain as
+environment overrides for testing.
 
 ```bash
 COUPLE="Rafiq & Lily" WEDDING_DATE=2026-12-12 node build-icons.mjs
