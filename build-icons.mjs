@@ -21,12 +21,19 @@ const WEDDING_DATE = process.env.WEDDING_DATE || "2026-12-12";
 const SIZES = [180, 192, 512];
 const FONT = "build/IBMPlexMono-SemiBold.ttf";
 
+/* The job is scheduled just after midnight in Malaysia, which is still the
+   previous day in UTC — so "today" has to be worked out in local terms or the
+   icon sits a day behind what the app shows. */
+const TZ_OFFSET_MIN = Number(process.env.TZ_OFFSET_MIN || 480);   // UTC+8
+
 const BG = "#0E5C43";      // deep emerald
 const RING = "#FBFCFA";    // cream
 const GEM = "#CFA25A";     // brass
 
 function daysLeft() {
-  const today = process.env.TODAY ? new Date(process.env.TODAY + "T00:00:00Z") : new Date();
+  const today = process.env.TODAY
+    ? new Date(process.env.TODAY + "T00:00:00Z")
+    : new Date(Date.now() + TZ_OFFSET_MIN * 60000);
   const t = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
   const [y, m, d] = WEDDING_DATE.split("-").map(Number);
   if (!y || !m || !d) return null;
@@ -78,6 +85,28 @@ for (const size of SIZES) {
     .asPng();
   writeFileSync(`icon-${size}.png`, png);
   console.log(`wrote icon-${size}.png`);
+}
+
+/* Phones cache the icon by URL. Stamping the count on means re-adding the app
+   to a home screen fetches the current one instead of the one it kept. */
+const stamp = days === null ? 0 : days;
+
+let html = readFileSync("index.html", "utf8");
+const before = html;
+html = html.replace(/icon-180\.png(\?d=-?\d+)?/g, `icon-180.png?d=${stamp}`);
+if (html !== before) {
+  writeFileSync("index.html", html);
+  console.log("stamped index.html");
+}
+
+let mf = readFileSync("manifest.webmanifest", "utf8");
+const mfBefore = mf;
+mf = mf
+  .replace(/icon-192\.png(\?d=-?\d+)?/g, `icon-192.png?d=${stamp}`)
+  .replace(/icon-512\.png(\?d=-?\d+)?/g, `icon-512.png?d=${stamp}`);
+if (mf !== mfBefore) {
+  writeFileSync("manifest.webmanifest", mf);
+  console.log("stamped manifest.webmanifest");
 }
 
 console.log(
