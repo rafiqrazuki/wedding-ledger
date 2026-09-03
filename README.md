@@ -45,10 +45,21 @@ WEDDING_DATE=2027-03-01 node build-icons.mjs
 TODAY=2026-12-10 node build-icons.mjs     # pretend it is another day
 ```
 
-**The wedding date lives in two places.** The app reads it from the database;
-the icon build has its own copy in `build-icons.mjs`, because the build has no
-way to read the database. Change the date in the app and you must change it
-there too, or the icon will count down to the wrong day.
+The icon shows the ring, the days remaining, and the couple's names.
+
+**The date and the names live in two places.** The app reads both from the
+database; the icon build has its own copies (`WEDDING_DATE` and `COUPLE` in
+`build-icons.mjs`), because the build has no way to read the database. Change
+either in the app and change it there too, or the icon will disagree.
+
+```bash
+COUPLE="Rafiq & Lily" WEDDING_DATE=2026-12-12 node build-icons.mjs
+```
+
+A phone copies the icon when the app is added to the home screen and never
+re-fetches it, so a new count only appears after removing the app and adding it
+again. The build stamps `?d=<count>` onto the icon URLs so that re-add can't be
+served the cached image.
 
 ## Files
 

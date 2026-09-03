@@ -18,6 +18,7 @@ import { Resvg } from "@resvg/resvg-js";
 import { readFileSync, writeFileSync } from "node:fs";
 
 const WEDDING_DATE = process.env.WEDDING_DATE || "2026-12-12";
+const COUPLE = process.env.COUPLE || "Rafiq & Lily";
 const SIZES = [180, 192, 512];
 const FONT = "build/IBMPlexMono-SemiBold.ttf";
 
@@ -40,35 +41,50 @@ function daysLeft() {
   return Math.round((Date.UTC(y, m - 1, d) - t) / 86400000);
 }
 
-/* The ring: no date, the day itself, or a date already gone by. */
+const xml = (s) =>
+  String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+/* The couple's names sit along the bottom of every icon, shrunk to fit so a
+   longer pair of names can't run off the tile. */
+function namesEl(y = 88) {
+  const text = COUPLE.toUpperCase();
+  let size = 8.4;
+  let spacing = 1.3;
+  const width = () => text.length * (size * 0.6 + spacing);
+  while (width() > 86 && size > 4.5) {
+    size -= 0.2;
+    spacing = Math.max(0.35, spacing - 0.06);
+  }
+  return `<text x="50" y="${y}" font-family="IBM Plex Mono" font-weight="600" font-size="${size.toFixed(2)}"
+        letter-spacing="${spacing.toFixed(2)}" fill="${GEM}" text-anchor="middle">${xml(text)}</text>`;
+}
+
+/* A ring on its own: no date set, the day itself, or a date already gone by. */
 function ringSvg(size, gold) {
   const S = size;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${S}" height="${S}" viewBox="0 0 100 100">
   <rect width="100" height="100" fill="${BG}"/>
-  <circle cx="50" cy="57.5" r="25" fill="none" stroke="${gold ? GEM : RING}" stroke-width="7.5"/>
-  <path d="M50 16 L60 30 L40 30 Z" fill="${GEM}"/>
+  <circle cx="50" cy="52" r="21" fill="none" stroke="${gold ? GEM : RING}" stroke-width="6.5"/>
+  <path d="M50 16 L58.5 28 L41.5 28 Z" fill="${GEM}"/>
+  ${namesEl()}
 </svg>`;
 }
 
-/* Counting down. Past two digits the word is dropped so the number can fill
-   the tile, matching what the in-app icon does. */
+/* Counting down: the ring above, the number through the middle, the names
+   below. The number shrinks as it gains digits so four figures still fit. */
 function countSvg(size, days) {
   const S = size;
   const label = String(days);
-  const wide = label.length >= 3;
-  const fontSize = wide ? 52 : label.length === 2 ? 54 : 60;
-  const y = wide ? 68 : 60;
-
-  const word = wide
-    ? ""
-    : `<text x="50" y="84" font-family="IBM Plex Mono" font-weight="600" font-size="12"
-        letter-spacing="1.2" fill="${GEM}" text-anchor="middle">${days === 1 ? "DAY" : "DAYS"}</text>`;
+  const n = label.length;
+  const fontSize = n >= 4 ? 28 : n === 3 ? 35 : 40;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${S}" height="${S}" viewBox="0 0 100 100">
   <rect width="100" height="100" fill="${BG}"/>
-  <text x="50" y="${y}" font-family="IBM Plex Mono" font-weight="600" font-size="${fontSize}"
-        fill="${RING}" text-anchor="middle" textLength="${wide ? 78 : ""}" ${wide ? 'lengthAdjust="spacingAndGlyphs"' : ""}>${label}</text>
-  ${word}
+  <circle cx="50" cy="27" r="10" fill="none" stroke="${GEM}" stroke-width="3"/>
+  <path d="M50 5.5 L55.5 15.5 L44.5 15.5 Z" fill="${GEM}"/>
+  <text x="50" y="70" font-family="IBM Plex Mono" font-weight="600" font-size="${fontSize}"
+        fill="${RING}" text-anchor="middle">${label}</text>
+  ${namesEl()}
 </svg>`;
 }
 
