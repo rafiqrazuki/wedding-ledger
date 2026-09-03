@@ -785,6 +785,30 @@
     font-weight: 500;
   }
 
+  /* Placed by area, not by source order: the wide layout puts the amount
+     between the name and the remove button. */
+  .contrib {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--tap);
+    grid-template-areas:
+      "name del"
+      "amt  amt";
+    gap: 8px;
+    align-items: center;
+  }
+
+  .contrib + .contrib { margin-top: 12px; }
+  .contrib .c-name { grid-area: name; }
+  .contrib .money-wrap { grid-area: amt; }
+  .contrib .c-del { grid-area: del; justify-self: end; font-size: 15px; }
+
+  @media (min-width: 720px) {
+    .contrib {
+      grid-template-columns: minmax(0, 1fr) 156px var(--tap);
+      grid-template-areas: "name amt del";
+    }
+  }
+
   .subhead {
     font-size: 10.5px;
     font-weight: 600;
@@ -937,7 +961,7 @@
     <div class="tile">
       <dt>Budget</dt>
       <dd id="t-budget">&mdash;</dd>
-      <span class="hint">Willing to spend</span>
+      <span class="hint" id="t-budget-hint">Willing to spend</span>
     </div>
     <div class="tile">
       <dt>Total cost</dt>
@@ -1060,15 +1084,21 @@
       <input id="s-date" type="date">
     </div>
 
-    <div class="duo">
-      <div class="field">
-        <label class="clabel" for="s-currency">Currency</label>
-        <input id="s-currency" placeholder="RM" enterkeyhint="next">
-      </div>
-      <div class="field">
-        <label class="clabel" for="s-budget">Total budget</label>
-        <input id="s-budget" class="money-in" inputmode="decimal" enterkeyhint="done" placeholder="0.00">
-      </div>
+    <div class="field">
+      <label class="clabel" for="s-currency">Currency</label>
+      <input id="s-currency" placeholder="RM" enterkeyhint="next">
+    </div>
+
+    <div class="subhead">Budget</div>
+    <p class="backup-note">Who is putting in what. These add up to the budget everything else is measured against.</p>
+
+    <div id="s-contribs"></div>
+
+    <button class="btn" type="button" id="s-add-contrib">Add another source</button>
+
+    <div class="readout">
+      <span class="k">Total budget</span>
+      <span class="v" id="s-budget-total">0.00</span>
     </div>
 
     <div class="subhead">Backups</div>
@@ -1126,7 +1156,37 @@
   var list = el("list");
 
   function defaults() {
-    return { name: "Our Wedding", date: "", currency: "RM", budget: 0 };
+    /* contributors: null means "never set", which is different from an empty
+       list the couple deliberately cleared. */
+    return { name: "Our Wedding", date: "", currency: "RM", budget: 0, contributors: null };
+  }
+
+  function budgetTotal() {
+    var cs = state.settings.contributors;
+    if (!Array.isArray(cs)) return num(state.settings.budget);
+    var t = 0;
+    cs.forEach(function (c) { t += num(c.amount); });
+    return t;
+  }
+
+  function normalizeContributors() {
+    var cs = state.settings.contributors;
+    if (cs == null) {
+      cs = [
+        { id: newId(), name: "Rafiq", amount: 0 },
+        { id: newId(), name: "Lily", amount: 0 }
+      ];
+      var legacy = num(state.settings.budget);
+      if (legacy > 0) cs.push({ id: newId(), name: "Carried over", amount: legacy });
+    } else if (Array.isArray(cs)) {
+      cs = cs.map(function (c) {
+        return { id: (c && c.id) || newId(), name: (c && c.name) || "", amount: num(c && c.amount) };
+      });
+    } else {
+      cs = [];
+    }
+    state.settings.contributors = cs;
+    state.settings.budget = budgetTotal();
   }
 
   var state = { settings: defaults(), items: [] };
@@ -1156,7 +1216,7 @@
       cost += num(state.items[i].cost);
       paid += num(state.items[i].deposit);
     }
-    var budget = num(state.settings.budget);
+    var budget = budgetTotal();
     return {
       budget: budget, cost: cost, paid: paid,
       due: cost - paid, remaining: budget - cost, cash: budget - paid
@@ -1238,6 +1298,7 @@
       }
       if (saved && Array.isArray(saved.items)) state.items = saved.items.map(normalizeItem);
     } catch (e) { /* corrupt entry: keep the defaults rather than wiping it blindly */ }
+    normalizeContributors();
   }
 
   function cacheSave() {
@@ -1277,7 +1338,10 @@
       name: state.settings.name,
       date: state.settings.date,
       currency: state.settings.currency,
-      budget: num(state.settings.budget)
+      budget: budgetTotal(),
+      contributors: (state.settings.contributors || []).map(function (c) {
+        return { id: c.id, name: c.name, amount: num(c.amount) };
+      })
     };
   }
 
@@ -1307,6 +1371,7 @@
     });
     items.sort(byPosition);
     state.items = items;
+    normalizeContributors();
   }
 
   /* One row changed on the server, from the other phone. */
@@ -1317,6 +1382,7 @@
     if (row.id === SETTINGS_ROW) {
       var def = defaults();
       for (var k in def) state.settings[k] = d[k] !== undefined ? d[k] : def[k];
+      normalizeContributors();
       cacheSave();
       renderHeader();
       renderSummary();
@@ -1605,6 +1671,7 @@
 
   async function start() {
     cacheLoad();
+    normalizeContributors();   // cacheLoad returns early when there is no cache
     loadOutbox();
     renderAll();
 
@@ -1814,6 +1881,10 @@
     el("key-over").textContent = money(Math.abs(t.remaining));
 
     setTile("t-budget", t.budget);
+    var cs = (state.settings.contributors || []).filter(function (c) { return num(c.amount) > 0; });
+    el("t-budget-hint").textContent = cs.length
+      ? cs.map(function (c) { return (c.name || "Someone") + " " + fmt(num(c.amount)); }).join(" · ")
+      : "Willing to spend";
     setTile("t-cost", t.cost);
     setTile("t-paid", t.paid);
     setTile("t-due", t.due);
@@ -2093,11 +2164,17 @@
     settingsTimer = null;
     if (!settingsPending || settingsUndoing) { settingsPending = false; return; }
     settingsPending = false;
+
+    var contribs = readContribs();
+    var total = 0;
+    contribs.forEach(function (c) { total += c.amount; });
+
     saveSettings({
       name: el("s-name").value.trim() || "Our Wedding",
       date: el("s-date").value,
       currency: el("s-currency").value.trim() || "RM",
-      budget: num(el("s-budget").value)
+      contributors: contribs,
+      budget: total
     });
   }
 
@@ -2106,6 +2183,88 @@
     clearTimeout(settingsTimer);
     settingsTimer = setTimeout(commitSettings, 400);
   }
+
+  function contribRows() {
+    return Array.prototype.slice.call(document.querySelectorAll("#s-contribs .contrib"));
+  }
+
+  function readContribs() {
+    return contribRows().map(function (row) {
+      return {
+        id: row.dataset.id,
+        name: row.querySelector(".c-name").value.trim(),
+        amount: num(row.querySelector(".c-amt").value)
+      };
+    });
+  }
+
+  function updateContribTotal() {
+    var t = 0;
+    readContribs().forEach(function (c) { t += c.amount; });
+    el("s-budget-total").textContent = money(t);
+  }
+
+  function contribRow(c) {
+    var row = document.createElement("div");
+    row.className = "contrib";
+    row.dataset.id = c.id || newId();
+
+    var name = document.createElement("input");
+    name.className = "c-name";
+    name.value = c.name || "";
+    name.placeholder = "Who";
+    name.setAttribute("aria-label", "Who is contributing");
+    name.setAttribute("autocapitalize", "words");
+
+    var wrap = document.createElement("span");
+    wrap.className = "money-wrap";
+    var prefix = document.createElement("i");
+    prefix.className = "prefix";
+    prefix.textContent = cur();
+    var amt = document.createElement("input");
+    amt.className = "c-amt money-in";
+    amt.value = num(c.amount) ? String(num(c.amount)) : "";
+    amt.placeholder = "0.00";
+    amt.setAttribute("inputmode", "decimal");
+    amt.setAttribute("aria-label", "Amount");
+    wrap.appendChild(prefix);
+    wrap.appendChild(amt);
+
+    var del = document.createElement("button");
+    del.type = "button";
+    del.className = "icon-btn danger c-del";
+    del.textContent = "\u2715";
+    del.setAttribute("aria-label", "Remove this source");
+    del.addEventListener("click", function () {
+      row.remove();
+      updateContribTotal();
+      touchSettings();
+    });
+
+    [name, amt].forEach(function (inp) {
+      inp.addEventListener("input", function () { updateContribTotal(); touchSettings(); });
+      inp.addEventListener("blur", commitSettings);
+    });
+
+    row.appendChild(name);
+    row.appendChild(del);
+    row.appendChild(wrap);
+    return row;
+  }
+
+  function renderContribs() {
+    var host = el("s-contribs");
+    host.textContent = "";
+    (state.settings.contributors || []).forEach(function (c) { host.appendChild(contribRow(c)); });
+    updateContribTotal();
+  }
+
+  el("s-add-contrib").addEventListener("click", function () {
+    var row = contribRow({ id: newId(), name: "", amount: 0 });
+    el("s-contribs").appendChild(row);
+    updateContribTotal();
+    row.querySelector(".c-name").focus();
+  });
 
   el("open-settings").addEventListener("click", function () {
     clearTimeout(settingsTimer);
@@ -2116,13 +2275,16 @@
       name: state.settings.name,
       date: state.settings.date,
       currency: state.settings.currency,
-      budget: state.settings.budget
+      budget: state.settings.budget,
+      contributors: (state.settings.contributors || []).map(function (c) {
+        return { id: c.id, name: c.name, amount: num(c.amount) };
+      })
     };
 
     el("s-name").value = state.settings.name || "";
     el("s-date").value = state.settings.date || "";
     el("s-currency").value = cur();
-    el("s-budget").value = state.settings.budget ? String(state.settings.budget) : "";
+    renderContribs();
 
     refreshBadgeUi();
     el("s-account").textContent = signedIn
@@ -2131,7 +2293,7 @@
     showSheet(el("settings"));
   });
 
-  ["s-name", "s-date", "s-currency", "s-budget"].forEach(function (id) {
+  ["s-name", "s-date", "s-currency"].forEach(function (id) {
     el(id).addEventListener("input", touchSettings);
     el(id).addEventListener("change", touchSettings);
     el(id).addEventListener("blur", commitSettings);
@@ -2142,7 +2304,7 @@
     clearTimeout(settingsTimer);
     settingsTimer = null;
     settingsPending = false;
-    if (settingsBefore) saveSettings(settingsBefore);
+    if (settingsBefore) { saveSettings(settingsBefore); renderContribs(); }
     el("settings").close();
   });
 
