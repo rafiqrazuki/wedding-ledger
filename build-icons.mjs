@@ -89,31 +89,34 @@ function namesEl(y = 88) {
 }
 
 /* A ring on its own: no date set, the day itself, or a date already gone by. */
-function ringSvg(size, gold) {
-  const S = size;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${S}" height="${S}" viewBox="0 0 100 100">
-  <rect width="100" height="100" fill="${BG}"/>
-  <circle cx="50" cy="52" r="21" fill="none" stroke="${gold ? GEM : RING}" stroke-width="6.5"/>
+function ringBody(gold) {
+  return `<circle cx="50" cy="52" r="21" fill="none" stroke="${gold ? GEM : RING}" stroke-width="6.5"/>
   <path d="M50 16 L58.5 28 L41.5 28 Z" fill="${GEM}"/>
-  ${namesEl()}
-</svg>`;
+  ${namesEl()}`;
 }
 
 /* Counting down: the ring above, the number through the middle, the names
    below. The number shrinks as it gains digits so four figures still fit. */
-function countSvg(size, days) {
-  const S = size;
+function countBody(days) {
   const label = String(days);
   const n = label.length;
   const fontSize = n >= 4 ? 28 : n === 3 ? 35 : 40;
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${S}" height="${S}" viewBox="0 0 100 100">
-  <rect width="100" height="100" fill="${BG}"/>
-  <circle cx="50" cy="27" r="10" fill="none" stroke="${GEM}" stroke-width="3"/>
+  return `<circle cx="50" cy="27" r="10" fill="none" stroke="${GEM}" stroke-width="3"/>
   <path d="M50 5.5 L55.5 15.5 L44.5 15.5 Z" fill="${GEM}"/>
   <text x="50" y="70" font-family="IBM Plex Mono" font-weight="600" font-size="${fontSize}"
         fill="${RING}" text-anchor="middle">${label}</text>
-  ${namesEl()}
+  ${namesEl()}`;
+}
+
+/* Android crops a maskable icon to a circle roughly 80% across, so the artwork
+   is scaled into that safe area — otherwise the names get sliced off the
+   bottom. The background still bleeds to the edges. */
+function svgDoc(size, body, maskable) {
+  const inner = maskable ? `<g transform="translate(16,16) scale(0.68)">${body}</g>` : body;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 100 100">
+  <rect width="100" height="100" fill="${BG}"/>
+  ${inner}
 </svg>`;
 }
 
@@ -122,17 +125,24 @@ console.log(await loadFromApp());
 const days = daysLeft();
 const fontData = readFileSync(FONT);
 
-for (const size of SIZES) {
-  const svg = days === null || days <= 0 ? ringSvg(size, days === 0) : countSvg(size, days);
-  const png = new Resvg(svg, {
+const body = days === null || days <= 0 ? ringBody(days === 0) : countBody(days);
+
+function render(svg, size) {
+  return new Resvg(svg, {
     fitTo: { mode: "width", value: size },
     font: { fontBuffers: [fontData], defaultFontFamily: "IBM Plex Mono", loadSystemFonts: false },
   })
     .render()
     .asPng();
-  writeFileSync(`icon-${size}.png`, png);
+}
+
+for (const size of SIZES) {
+  writeFileSync(`icon-${size}.png`, render(svgDoc(size, body, false), size));
   console.log(`wrote icon-${size}.png`);
 }
+
+writeFileSync("icon-maskable-512.png", render(svgDoc(512, body, true), 512));
+console.log("wrote icon-maskable-512.png");
 
 /* Phones cache the icon by URL. Stamping the count on means re-adding the app
    to a home screen fetches the current one instead of the one it kept. */
@@ -150,7 +160,8 @@ let mf = readFileSync("manifest.webmanifest", "utf8");
 const mfBefore = mf;
 mf = mf
   .replace(/icon-192\.png(\?d=-?\d+)?/g, `icon-192.png?d=${stamp}`)
-  .replace(/icon-512\.png(\?d=-?\d+)?/g, `icon-512.png?d=${stamp}`);
+  .replace(/icon-512\.png(\?d=-?\d+)?/g, `icon-512.png?d=${stamp}`)
+  .replace(/icon-maskable-512\.png(\?d=-?\d+)?/g, `icon-maskable-512.png?d=${stamp}`);
 if (mf !== mfBefore) {
   writeFileSync("manifest.webmanifest", mf);
   console.log("stamped manifest.webmanifest");

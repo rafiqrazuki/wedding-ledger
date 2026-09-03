@@ -42,7 +42,7 @@ jobs:
         run: |
           # index.html and the manifest carry a ?d=<count> stamp, so a phone
           # re-adding the app fetches the current icon instead of a cached one.
-          paths="icon-180.png icon-192.png icon-512.png index.html manifest.webmanifest"
+          paths="icon-180.png icon-192.png icon-512.png icon-maskable-512.png index.html manifest.webmanifest"
           if [ -z "$(git status --porcelain -- $paths)" ]; then
             echo "Icons unchanged — nothing to commit."
             exit 0
