@@ -1,11 +1,12 @@
 /*
- * Builds the app icons with the days-remaining count baked in.
+ * Builds the app icons: the ring and the couple's names.
  *
- * The home screen icon is copied by the phone at the moment the app is added
- * and never re-fetched, so the only way it can show a current number is for
- * the file itself to be rebuilt. A scheduled workflow runs this once a day and
- * commits the result; re-adding the app to a home screen then installs an icon
- * showing that day's count.
+ * Deliberately no day count. A phone copies the home screen icon when the app
+ * is added and never re-fetches it, so a number baked in freezes on install day
+ * and slowly becomes a lie. The countdown lives where it can actually update:
+ * in the app, in the browser tab icon, and on the icon badge.
+ *
+ * The date is still read, for one reason: the ring turns gold on the day.
  *
  * The date and the couple's names are read from the app itself: it publishes
  * them to a single row that anyone may read, so the icon always agrees with
@@ -17,6 +18,7 @@
  */
 import { Resvg } from "@resvg/resvg-js";
 import { readFileSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 
 /* Fallbacks only. The real date and names come from the app itself — see
    loadFromApp() below — so the icon can't drift away from what the app shows. */
@@ -95,19 +97,10 @@ function ringBody(gold) {
   ${namesEl()}`;
 }
 
-/* Counting down: the ring above, the number through the middle, the names
-   below. The number shrinks as it gains digits so four figures still fit. */
-function countBody(days) {
-  const label = String(days);
-  const n = label.length;
-  const fontSize = n >= 4 ? 28 : n === 3 ? 35 : 40;
-
-  return `<circle cx="50" cy="27" r="10" fill="none" stroke="${GEM}" stroke-width="3"/>
-  <path d="M50 5.5 L55.5 15.5 L44.5 15.5 Z" fill="${GEM}"/>
-  <text x="50" y="70" font-family="IBM Plex Mono" font-weight="600" font-size="${fontSize}"
-        fill="${RING}" text-anchor="middle">${label}</text>
-  ${namesEl()}`;
-}
+/* No day count on the icon. A phone copies the icon when the app is added to a
+   home screen and never re-fetches it, so any number baked in freezes on that
+   day and quietly goes wrong. The live count lives in the app, the tab icon and
+   the icon badge, all of which actually update. */
 
 /* Android crops a maskable icon to a circle roughly 80% across, so the artwork
    is scaled into that safe area — otherwise the names get sliced off the
@@ -125,7 +118,8 @@ console.log(await loadFromApp());
 const days = daysLeft();
 const fontData = readFileSync(FONT);
 
-const body = days === null || days <= 0 ? ringBody(days === 0) : countBody(days);
+/* Gold on the wedding day itself, cream every other day. */
+const body = ringBody(days === 0);
 
 function render(svg, size) {
   return new Resvg(svg, {
@@ -144,13 +138,14 @@ for (const size of SIZES) {
 writeFileSync("icon-maskable-512.png", render(svgDoc(512, body, true), 512));
 console.log("wrote icon-maskable-512.png");
 
-/* Phones cache the icon by URL. Stamping the count on means re-adding the app
-   to a home screen fetches the current one instead of the one it kept. */
-const stamp = days === null ? 0 : days;
+/* Phones cache the icon by URL, so the URL carries a stamp. It is a hash of the
+   artwork rather than the date: the icon now only changes when it really
+   changes, instead of churning a commit every night. */
+const stamp = createHash("sha256").update(readFileSync("icon-180.png")).digest("hex").slice(0, 10);
 
 let html = readFileSync("index.html", "utf8");
 const before = html;
-html = html.replace(/icon-180\.png(\?d=-?\d+)?/g, `icon-180.png?d=${stamp}`);
+html = html.replace(/icon-180\.png(\?v=[\w-]+)?/g, `icon-180.png?v=${stamp}`);
 if (html !== before) {
   writeFileSync("index.html", html);
   console.log("stamped index.html");
@@ -159,9 +154,9 @@ if (html !== before) {
 let mf = readFileSync("manifest.webmanifest", "utf8");
 const mfBefore = mf;
 mf = mf
-  .replace(/icon-192\.png(\?d=-?\d+)?/g, `icon-192.png?d=${stamp}`)
-  .replace(/icon-512\.png(\?d=-?\d+)?/g, `icon-512.png?d=${stamp}`)
-  .replace(/icon-maskable-512\.png(\?d=-?\d+)?/g, `icon-maskable-512.png?d=${stamp}`);
+  .replace(/icon-192\.png(\?v=[\w-]+)?/g, `icon-192.png?v=${stamp}`)
+  .replace(/icon-512\.png(\?v=[\w-]+)?/g, `icon-512.png?v=${stamp}`)
+  .replace(/icon-maskable-512\.png(\?v=[\w-]+)?/g, `icon-maskable-512.png?v=${stamp}`);
 if (mf !== mfBefore) {
   writeFileSync("manifest.webmanifest", mf);
   console.log("stamped manifest.webmanifest");

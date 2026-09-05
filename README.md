@@ -33,10 +33,10 @@ somewhere safe.
 There is no build step. `index.html` is the whole app — open it directly in a
 browser, or serve the folder with any static file server.
 
-The app icons carry the days-remaining count, baked into the PNG files. A
-phone copies the icon when you add the app to a home screen and never asks
-again, so the file itself has to be current: `.github/workflows/icons.yml`
-rebuilds and commits them once a day.
+The app icons show the ring and the couple's names, and carry no day count.
+A phone copies the icon when you add the app to a home screen and never asks
+again, so a number baked into it would freeze on install day. The countdown
+lives in the app, the browser tab icon and the icon badge instead.
 
 ```bash
 npm ci
@@ -44,8 +44,6 @@ node build-icons.mjs                      # uses the date in build-icons.mjs
 WEDDING_DATE=2027-03-01 node build-icons.mjs
 TODAY=2026-12-10 node build-icons.mjs     # pretend it is another day
 ```
-
-The icon shows the ring, the days remaining, and the couple's names.
 
 **The date and names come from the app's own settings.** Saving settings writes
 a `__public_date__` row holding only the date and the display name, and one RLS
@@ -63,10 +61,10 @@ environment overrides for testing.
 COUPLE="Rafiq & Lily" WEDDING_DATE=2026-12-12 node build-icons.mjs
 ```
 
-A phone copies the icon when the app is added to the home screen and never
-re-fetches it, so a new count only appears after removing the app and adding it
-again. The build stamps `?d=<count>` onto the icon URLs so that re-add can't be
-served the cached image.
+The icon URLs carry a `?v=<hash>` stamp taken from the artwork, so a phone
+re-adding the app can't be served a stale image — and the stamp only moves when
+the icon genuinely changes, which keeps the nightly job from committing for the
+sake of it. The ring turns gold on the wedding day, so the job still runs.
 
 ## Files
 
