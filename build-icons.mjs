@@ -145,7 +145,14 @@ const stamp = createHash("sha256").update(readFileSync("icon-180.png")).digest("
 
 let html = readFileSync("index.html", "utf8");
 const before = html;
-html = html.replace(/icon-180\.png(\?v=[\w-]+)?/g, `icon-180.png?v=${stamp}`);
+/* Swallow whatever query string is already there, not just a ?v= one: an older
+   build left ?d=<count> stamps, and matching only ?v= glued the new stamp in
+   front of them ("icon-180.png?v=abc?d=113"). */
+const ANY_QUERY = String.raw`(\?[^"'\s]*)?`;
+const stampUrl = (text, file) =>
+  text.replace(new RegExp(file.replace(/\./g, "\\.") + ANY_QUERY, "g"), `${file}?v=${stamp}`);
+
+html = stampUrl(html, "icon-180.png");
 if (html !== before) {
   writeFileSync("index.html", html);
   console.log("stamped index.html");
@@ -153,10 +160,7 @@ if (html !== before) {
 
 let mf = readFileSync("manifest.webmanifest", "utf8");
 const mfBefore = mf;
-mf = mf
-  .replace(/icon-192\.png(\?v=[\w-]+)?/g, `icon-192.png?v=${stamp}`)
-  .replace(/icon-512\.png(\?v=[\w-]+)?/g, `icon-512.png?v=${stamp}`)
-  .replace(/icon-maskable-512\.png(\?v=[\w-]+)?/g, `icon-maskable-512.png?v=${stamp}`);
+mf = stampUrl(stampUrl(stampUrl(mf, "icon-192.png"), "icon-512.png"), "icon-maskable-512.png");
 if (mf !== mfBefore) {
   writeFileSync("manifest.webmanifest", mf);
   console.log("stamped manifest.webmanifest");
