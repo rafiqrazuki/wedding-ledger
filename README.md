@@ -5,6 +5,9 @@ paid as a deposit, and what's still owed — measured against the budget you set
 
 **Live: https://rafiqrazuki.github.io/wedding-ledger/**
 
+The app has two pages: **Budget** (the ledger) and **Timeline** (preparation
+tasks on a calendar).
+
 ## What it does
 
 - Set a total budget, an event name, a date, and a currency.
@@ -14,6 +17,16 @@ paid as a deposit, and what's still owed — measured against the budget you set
 - A bar splits the budget into paid / still owed / unspoken-for, and turns red
   if the bookings overshoot.
 - Each item shows its own balance and a status: Unpaid, Deposit paid, Settled.
+
+On the Timeline page:
+
+- Add a task against a date; tick it off when it is done.
+- **Month** shows a calendar (task titles on a wide screen, dots on a phone)
+  with the day you pick listed underneath.
+- **Week** lists the seven days, with empty days collapsed to a single line.
+- **All** groups everything: late first, then month by month, then done.
+- Weeks start on Sunday. Today is circled, and the wedding day is ringed in
+  brass.
 
 ## Where the data lives
 

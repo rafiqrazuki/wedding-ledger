@@ -840,6 +840,314 @@
     background: var(--surface);
   }
 
+  /* ---------- page tabs ---------- */
+
+  .tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    padding: 4px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+
+  .tabs button {
+    min-height: 38px;
+    border: 1px solid transparent;
+    background: none;
+    color: var(--ink-2);
+    font-weight: 600;
+    font-size: 14px;
+    border-radius: 9px;
+  }
+
+  .tabs button[aria-selected="true"] {
+    background: var(--surface);
+    border-color: var(--line);
+    color: var(--ink);
+  }
+
+  /* ---------- timeline ---------- */
+
+  .tl-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .tl-head h2 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 22px;
+    margin: 0;
+  }
+
+  .tl-progress { font-size: 13px; color: var(--ink-3); }
+  .tl-progress b { color: var(--ink-2); font-weight: 600; }
+  .tl-progress .over { color: var(--bad); font-weight: 600; }
+
+  .tl-bar { display: flex; align-items: center; gap: 8px; }
+
+  .tl-period {
+    flex: 1;
+    text-align: center;
+    font-weight: 600;
+    font-size: 15px;
+    min-width: 0;
+  }
+
+  .seg {
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    flex: none;
+  }
+
+  .seg button {
+    min-height: 34px;
+    padding: 0 12px;
+    border: none;
+    background: none;
+    color: var(--ink-2);
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 7px;
+  }
+
+  .seg button[aria-selected="true"] { background: var(--surface); color: var(--ink); }
+
+  .cal {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .cal-dow {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .cal-dow span {
+    text-align: center;
+    padding: 8px 0;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+
+  .cal-day {
+    min-height: 62px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 3px;
+    border: none;
+    border-right: 1px solid var(--line-soft);
+    border-bottom: 1px solid var(--line-soft);
+    background: none;
+    color: inherit;
+    font: inherit;
+  }
+
+  .cal-day:nth-child(7n) { border-right: none; }
+  .cal-day.out { opacity: .4; }
+  .cal-day.sel { background: var(--accent-soft); }
+
+  .cal-day .d {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    width: 24px;
+    height: 24px;
+    line-height: 24px;
+    border-radius: 50%;
+    flex: none;
+  }
+
+  .cal-day.today .d { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .cal-day.bigday .d { box-shadow: inset 0 0 0 2px var(--brass); color: var(--brass); font-weight: 600; }
+
+  .cal-dots { display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; }
+  .cal-dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+  .cal-dots i.done { background: var(--ink-3); opacity: .55; }
+  .cal-dots i.over { background: var(--bad); }
+  .cal-chips { display: none; }
+
+  .day-panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .day-panel > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 10px 10px 14px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .day-panel h3 { margin: 0; font-size: 15px; font-weight: 600; }
+
+  .week, .overview { display: flex; flex-direction: column; gap: 10px; }
+
+  .ov-group {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .ov-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 0;
+    padding: 10px 14px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .ov-head b { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 600; }
+  .ov-group.late .ov-head { background: var(--bad-soft); color: var(--bad); }
+  .ov-group.done-group .ov-head { color: var(--ink-3); }
+  .ov-group.done-group { opacity: .78; }
+
+  .wday {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .wday > header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 8px 9px 14px;
+    border-bottom: 1px solid var(--line-soft);
+    background: var(--surface-2);
+  }
+
+  .wday .wd {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .wday .wdate {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    color: var(--ink-2);
+    margin-right: auto;
+  }
+
+  .wday.today > header { background: var(--accent-soft); }
+  .wday.today .wd, .wday.today .wdate { color: var(--accent); }
+  .wday.bigday > header { background: var(--brass-soft); }
+  .wday.bigday .wd, .wday.bigday .wdate { color: var(--brass); }
+
+  .wempty, .day-empty { padding: 12px 14px; font-size: 13px; color: var(--ink-3); }
+
+  .task {
+    display: grid;
+    grid-template-columns: var(--tap) minmax(0, 1fr);
+    align-items: center;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .task:last-child { border-bottom: none; }
+  .task:hover { background: color-mix(in srgb, var(--surface-2) 45%, transparent); }
+
+  .tick {
+    width: var(--tap);
+    height: var(--tap);
+    border: none;
+    background: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .tick i {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: 1.5px solid var(--line);
+    display: block;
+    position: relative;
+  }
+
+  .task.done .tick i { background: var(--accent); border-color: var(--accent); }
+
+  .task.done .tick i::after {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 2px;
+    width: 4px;
+    height: 9px;
+    border: solid var(--accent-ink);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  .task-main {
+    text-align: left;
+    border: none;
+    background: none;
+    font: inherit;
+    color: inherit;
+    padding: 10px 12px 10px 0;
+    min-height: var(--tap);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .t-title {
+    font-size: 15px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .task.done .t-title { color: var(--ink-3); text-decoration: line-through; }
+  .t-meta { font-size: 11.5px; color: var(--ink-3); }
+  .t-meta.over { color: var(--bad); font-weight: 600; }
+
   /* ---------- wide screens ---------- */
 
   @media (min-width: 720px) {
@@ -878,6 +1186,28 @@
       border-bottom: 1px solid var(--line);
       animation: none;
     }
+
+    .cal-day { min-height: 94px; align-items: stretch; padding: 6px; gap: 5px; }
+    .cal-day .d { align-self: center; }
+    .cal-dots { display: none; }
+    .cal-chips { display: flex; flex-direction: column; gap: 3px; width: 100%; min-width: 0; }
+
+    .cal-chips span {
+      font-size: 11px;
+      line-height: 1.3;
+      padding: 2px 5px;
+      border-radius: 4px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-align: left;
+    }
+
+    .cal-chips span.done { background: var(--surface-2); color: var(--ink-3); }
+    .cal-chips span.over { background: var(--bad-soft); color: var(--bad); }
+    .cal-chips b { font-size: 10.5px; color: var(--ink-3); font-weight: 600; text-align: left; padding-left: 5px; }
 
     .grab { display: none; }
     .sheet-body { padding: 20px 22px 18px; }
@@ -935,6 +1265,13 @@
     </div>
     <button class="btn btn-icon" id="open-settings" type="button" aria-label="Budget and details" title="Budget &amp; details">&#9881;</button>
   </header>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button type="button" id="tab-budget" role="tab" aria-selected="true">Budget</button>
+    <button type="button" id="tab-timeline" role="tab" aria-selected="false">Timeline</button>
+  </nav>
+
+  <div id="page-budget">
 
   <section class="headline">
     <div>
@@ -1000,6 +1337,53 @@
     </div>
     <div id="list"></div>
   </section>
+
+  </div><!-- /page-budget -->
+
+  <div id="page-timeline" hidden>
+
+    <div class="tl-head">
+      <h2>Preparation</h2>
+      <span class="tl-progress" id="tl-progress"></span>
+    </div>
+
+    <div class="tl-bar" id="tl-nav">
+      <button class="btn btn-icon" type="button" id="tl-prev" aria-label="Previous">&#8249;</button>
+      <span class="tl-period" id="tl-period"></span>
+      <button class="btn btn-icon" type="button" id="tl-next" aria-label="Next">&#8250;</button>
+      <button class="btn" type="button" id="tl-today">Today</button>
+    </div>
+
+    <div class="tl-bar">
+      <span class="seg" role="tablist" aria-label="Calendar view">
+        <button type="button" id="view-month" role="tab" aria-selected="true">Month</button>
+        <button type="button" id="view-week" role="tab" aria-selected="false">Week</button>
+        <button type="button" id="view-all" role="tab" aria-selected="false">All</button>
+      </span>
+      <span style="flex:1"></span>
+      <button class="btn-primary" type="button" id="tl-add">Add task</button>
+    </div>
+
+    <div class="cal" id="cal" hidden>
+      <div class="cal-dow">
+        <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span>
+        <span>Thu</span><span>Fri</span><span>Sat</span>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+
+    <section class="day-panel" id="day-panel" hidden>
+      <header>
+        <h3 id="day-title"></h3>
+        <button class="btn-quiet" type="button" id="day-add">Add on this day</button>
+      </header>
+      <div id="day-list"></div>
+    </section>
+
+    <div class="week" id="week" hidden></div>
+    <div class="overview" id="overview" hidden></div>
+
+  </div><!-- /page-timeline -->
 
   <footer class="footer">
     <span class="sync" id="sync">Saved on this device</span>
@@ -1123,6 +1507,37 @@
   </form>
 </dialog>
 
+<dialog id="task-editor" aria-labelledby="task-editor-title">
+  <div class="grab"></div>
+  <form class="sheet" id="task-form" method="dialog" autocomplete="off">
+   <div class="sheet-body">
+    <h2 id="task-editor-title">Add task</h2>
+
+    <div class="field">
+      <label class="clabel" for="k-title">Task</label>
+      <input id="k-title" placeholder="Book photographer, hantaran shopping&hellip;"
+             autocapitalize="sentences" enterkeyhint="next">
+    </div>
+
+    <div class="field">
+      <label class="clabel" for="k-date">Date</label>
+      <input id="k-date" type="date">
+    </div>
+
+    <button class="btn" type="button" id="k-done">Mark done</button>
+   </div>
+
+    <div class="sheet-actions">
+      <button class="btn" type="button" id="k-cancel">Discard</button>
+      <button class="btn-primary" type="submit">Done</button>
+    </div>
+
+    <div class="sheet-foot" id="k-delete-wrap" hidden>
+      <button class="btn-danger" type="button" id="k-delete">Remove this task</button>
+    </div>
+  </form>
+</dialog>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 (function () {
@@ -1189,7 +1604,7 @@
     state.settings.budget = budgetTotal();
   }
 
-  var state = { settings: defaults(), items: [] };
+  var state = { settings: defaults(), items: [], tasks: [] };
   var editingId = null;
   var storageOK = true;
 
@@ -1244,6 +1659,69 @@
     };
   }
 
+  /* ---------- dates and tasks ---------- */
+
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+  function isoOf(d) { return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); }
+  function todayISO() { return isoOf(new Date()); }
+  function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+  function startOfWeek(d) { return addDays(d, -d.getDay()); }      /* weeks start Sunday */
+
+  function parseISO(s) {
+    var p = String(s || "").split("-");
+    if (p.length !== 3) return null;
+    var d = new Date(+p[0], +p[1] - 1, +p[2]);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  function shortDate(iso) {
+    var d = parseISO(iso);
+    if (!d) return "";
+    var opts = { weekday: "short", day: "numeric", month: "short" };
+    if (d.getFullYear() !== new Date().getFullYear()) opts.year = "numeric";
+    return d.toLocaleDateString("en-GB", opts);
+  }
+
+  function monthLabel(ym) {
+    var d = parseISO(ym + "-01");
+    return d ? d.toLocaleDateString("en-GB", { month: "long", year: "numeric" }) : ym;
+  }
+
+  function prettyDay(iso) {
+    var d = parseISO(iso);
+    if (!d) return "";
+    return d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+  }
+
+  function normalizeTask(v) {
+    return {
+      id: v && v.id ? String(v.id) : newId(),
+      title: v && v.title ? String(v.title) : "",
+      date: v && v.date ? String(v.date) : "",
+      done: !!(v && v.done),
+      position: (v && v.position) || 0
+    };
+  }
+
+  function findTask(id) {
+    for (var i = 0; i < state.tasks.length; i++) {
+      if (state.tasks[i].id === id) return state.tasks[i];
+    }
+    return null;
+  }
+
+  function byTaskOrder(a, b) {
+    var x = String(a.date || ""), y = String(b.date || "");
+    if (x !== y) return x < y ? -1 : 1;
+    return (a.position || 0) - (b.position || 0);
+  }
+
+  function tasksOn(iso) {
+    return state.tasks.filter(function (t) { return t.date === iso; }).sort(byTaskOrder);
+  }
+
+  function isOverdue(t) { return !t.done && t.date && t.date < todayISO(); }
+
   /* ---------- where the ledger lives ----------
      One row per item in the "ledger" table, plus one row for the settings.
      Per-row means two people editing at once can't overwrite each other:
@@ -1297,6 +1775,7 @@
         }
       }
       if (saved && Array.isArray(saved.items)) state.items = saved.items.map(normalizeItem);
+      if (saved && Array.isArray(saved.tasks)) state.tasks = saved.tasks.map(normalizeTask).sort(byTaskOrder);
     } catch (e) { /* corrupt entry: keep the defaults rather than wiping it blindly */ }
     normalizeContributors();
   }
@@ -1345,6 +1824,27 @@
     };
   }
 
+  function taskRow(t) {
+    return {
+      kind: "task",
+      title: t.title,
+      date: t.date || "",
+      done: !!t.done,
+      position: t.position || 0,
+      deleted: false
+    };
+  }
+
+  function rowToTask(id, d) {
+    return {
+      id: id,
+      title: d.title || "",
+      date: d.date || "",
+      done: !!d.done,
+      position: d.position || 0
+    };
+  }
+
   function byPosition(a, b) { return (a.position || 0) - (b.position || 0); }
 
   function rowToItem(id, d) {
@@ -1359,7 +1859,7 @@
   }
 
   function applyRows(rows) {
-    var items = [];
+    var items = [], tasks = [];
     rows.forEach(function (r) {
       var d = r.data || {};
       if (r.id === SETTINGS_ROW) {
@@ -1367,10 +1867,14 @@
         for (var k in def) state.settings[k] = d[k] !== undefined ? d[k] : def[k];
       } else if (d.kind === "item" && !d.deleted) {
         items.push(rowToItem(r.id, d));
+      } else if (d.kind === "task" && !d.deleted) {
+        tasks.push(rowToTask(r.id, d));
       }
     });
     items.sort(byPosition);
+    tasks.sort(byTaskOrder);
     state.items = items;
+    state.tasks = tasks;
     normalizeContributors();
   }
 
@@ -1388,6 +1892,24 @@
       renderSummary();
       return;
     }
+    if (d.kind === "task") {
+      var ti = -1;
+      for (var j = 0; j < state.tasks.length; j++) {
+        if (state.tasks[j].id === row.id) { ti = j; break; }
+      }
+      if (d.deleted) {
+        if (ti >= 0) state.tasks.splice(ti, 1);
+      } else if (ti >= 0) {
+        state.tasks[ti] = rowToTask(row.id, d);
+      } else {
+        state.tasks.push(rowToTask(row.id, d));
+      }
+      state.tasks.sort(byTaskOrder);
+      cacheSave();
+      renderTimeline();
+      return;
+    }
+
     if (d.kind !== "item") return;
 
     var idx = -1;
@@ -1422,6 +1944,11 @@
   function pushItem(id) {
     var it = find(id);
     if (it) queueRow(id, itemRow(it));
+  }
+
+  function pushTask(id) {
+    var t = findTask(id);
+    if (t) queueRow(id, taskRow(t));
   }
 
   function pushSettings() {
@@ -1533,6 +2060,42 @@
     state.items = state.items.filter(function (i) { return i.id !== id; });
     renderSummary();
     renderList();
+    cacheSave();
+    queueRow(id, row);
+  }
+
+  function addTask(data) {
+    var id = newId();
+    state.tasks.push({
+      id: id,
+      title: data.title || "",
+      date: data.date || "",
+      done: !!data.done,
+      position: Date.now()
+    });
+    state.tasks.sort(byTaskOrder);
+    renderTimeline();
+    cacheSave();
+    pushTask(id);
+    return id;
+  }
+
+  function patchTask(id, patch) {
+    var t = findTask(id);
+    if (!t) return;
+    for (var k in patch) t[k] = patch[k];
+    state.tasks.sort(byTaskOrder);
+    renderTimeline();
+    cacheSave();
+    pushTask(id);
+  }
+
+  function removeTask(id) {
+    var t = findTask(id);
+    var row = t ? taskRow(t) : { kind: "task", title: "", date: "", done: false, position: 0 };
+    row.deleted = true;                       // tombstone: the table has no delete policy
+    state.tasks = state.tasks.filter(function (x) { return x.id !== id; });
+    renderTimeline();
     cacheSave();
     queueRow(id, row);
   }
@@ -1655,13 +2218,17 @@
       if (res.error) throw res.error;
       var rows = res.data || [];
 
-      if (!rows.length && (state.items.length || num(state.settings.budget))) {
+      if (!rows.length && (state.items.length || state.tasks.length || num(state.settings.budget))) {
         /* Nothing online yet but this phone already has a list: send it up
            rather than wiping it. */
         pushSettings();
         state.items.forEach(function (it) {
           if (!it.position) it.position = Date.now();
           pushItem(it.id);
+        });
+        state.tasks.forEach(function (t) {
+          if (!t.position) t.position = Date.now();
+          pushTask(t.id);
         });
       } else {
         applyRows(rows);
@@ -1718,7 +2285,502 @@
 
   /* ---------- rendering ---------- */
 
-  function renderAll() { renderHeader(); renderSummary(); renderList(); }
+  function renderAll() { renderHeader(); renderSummary(); renderList(); renderTimeline(); }
+
+  /* ---------- which page is showing ----------
+     Per device, not synced: which page you were last on is your business,
+     not something to push at the other phone. */
+
+  var UI_KEY = "wedding-ledger-ui";
+  var ui = { page: "budget", view: "month", anchor: todayISO(), selected: todayISO() };
+
+  (function loadUi() {
+    try {
+      var raw = localStorage.getItem(UI_KEY);
+      if (!raw) return;
+      var saved = JSON.parse(raw);
+      if (saved && (saved.page === "budget" || saved.page === "timeline")) ui.page = saved.page;
+      if (saved && (saved.view === "month" || saved.view === "week" || saved.view === "all")) ui.view = saved.view;
+    } catch (e) { /* defaults are fine */ }
+  })();
+
+  function saveUi() {
+    try { localStorage.setItem(UI_KEY, JSON.stringify({ page: ui.page, view: ui.view })); }
+    catch (e) {}
+  }
+
+  function showPage(name) {
+    ui.page = name === "timeline" ? "timeline" : "budget";
+    var timeline = ui.page === "timeline";
+    el("page-budget").hidden = timeline;
+    el("page-timeline").hidden = !timeline;
+    el("tab-budget").setAttribute("aria-selected", String(!timeline));
+    el("tab-timeline").setAttribute("aria-selected", String(timeline));
+    el("add-phone").textContent = timeline ? "+  Add task" : "+  Add item";
+    el("export").hidden = timeline;
+    saveUi();
+    if (timeline) renderTimeline(); else renderSummary();
+  }
+
+  el("tab-budget").addEventListener("click", function () { showPage("budget"); });
+  el("tab-timeline").addEventListener("click", function () { showPage("timeline"); });
+
+  /* ---------- the preparation timeline ---------- */
+
+  function setView(v) {
+    ui.view = (v === "week" || v === "all") ? v : "month";
+    el("view-month").setAttribute("aria-selected", String(ui.view === "month"));
+    el("view-week").setAttribute("aria-selected", String(ui.view === "week"));
+    el("view-all").setAttribute("aria-selected", String(ui.view === "all"));
+    saveUi();
+    renderTimeline();
+  }
+
+  el("view-month").addEventListener("click", function () { setView("month"); });
+  el("view-week").addEventListener("click", function () { setView("week"); });
+  el("view-all").addEventListener("click", function () { setView("all"); });
+
+  el("tl-today").addEventListener("click", function () {
+    ui.anchor = todayISO();
+    ui.selected = todayISO();
+    renderTimeline();
+  });
+
+  el("tl-prev").addEventListener("click", function () { step(-1); });
+  el("tl-next").addEventListener("click", function () { step(1); });
+
+  function step(dir) {
+    var a = parseISO(ui.anchor) || new Date();
+    if (ui.view === "week") {
+      ui.anchor = isoOf(addDays(a, dir * 7));
+    } else {
+      ui.anchor = isoOf(new Date(a.getFullYear(), a.getMonth() + dir, 1));
+    }
+    renderTimeline();
+  }
+
+  el("tl-add").addEventListener("click", function () { openTask(null, ui.selected); });
+  el("day-add").addEventListener("click", function () { openTask(null, ui.selected); });
+
+  function taskEl(t, showDate) {
+    var row = document.createElement("div");
+    row.className = "task" + (t.done ? " done" : "");
+    row.dataset.id = t.id;
+
+    var tick = document.createElement("button");
+    tick.type = "button";
+    tick.className = "tick";
+    tick.setAttribute("aria-pressed", String(!!t.done));
+    tick.setAttribute("aria-label", (t.done ? "Mark not done: " : "Mark done: ") + (t.title || "task"));
+    tick.appendChild(document.createElement("i"));
+    tick.addEventListener("click", function () { patchTask(t.id, { done: !t.done }); });
+
+    var main = document.createElement("button");
+    main.type = "button";
+    main.className = "task-main";
+    main.setAttribute("aria-label", "Edit " + (t.title || "task"));
+    var title = document.createElement("span");
+    title.className = "t-title";
+    title.textContent = t.title || "Untitled task";
+    main.appendChild(title);
+
+    var meta = document.createElement("span");
+    if (isOverdue(t)) {
+      meta.className = "t-meta over";
+      var days = Math.round((parseISO(todayISO()) - parseISO(t.date)) / 86400000);
+      meta.textContent = (days === 1 ? "1 day late" : days + " days late") +
+        (showDate && t.date ? " · " + shortDate(t.date) : "");
+      main.appendChild(meta);
+    } else if (showDate && t.date) {
+      meta.className = "t-meta";
+      meta.textContent = shortDate(t.date);
+      main.appendChild(meta);
+    }
+
+    main.addEventListener("click", function () { openTask(t.id, t.date); });
+
+    row.appendChild(tick);
+    row.appendChild(main);
+    return row;
+  }
+
+  function fillTasks(host, iso, emptyText) {
+    host.textContent = "";
+    var list = tasksOn(iso);
+    if (!list.length) {
+      var p = document.createElement("p");
+      p.className = "day-empty";
+      p.textContent = emptyText;
+      host.appendChild(p);
+      return;
+    }
+    list.forEach(function (t) { host.appendChild(taskEl(t)); });
+  }
+
+  function renderProgress() {
+    var total = state.tasks.length;
+    var done = state.tasks.filter(function (t) { return t.done; }).length;
+    var late = state.tasks.filter(isOverdue).length;
+    var out = el("tl-progress");
+    out.textContent = "";
+    if (!total) { out.textContent = "No tasks yet"; return; }
+    var b = document.createElement("b");
+    b.textContent = done + " of " + total;
+    out.appendChild(b);
+    out.appendChild(document.createTextNode(" done"));
+    if (late) {
+      out.appendChild(document.createTextNode(" · "));
+      var o = document.createElement("span");
+      o.className = "over";
+      o.textContent = late + " late";
+      out.appendChild(o);
+    }
+  }
+
+  /* The bottom bar belongs to whichever page is showing. */
+  function renderTimelineDock() {
+    var total = state.tasks.length;
+    var done = state.tasks.filter(function (t) { return t.done; }).length;
+    el("dock-key").textContent = "Tasks done";
+    el("dock-value").textContent = total ? done + " of " + total : "—";
+    el("dock-value").classList.remove("over");   // the header carries the late count
+  }
+
+  function renderMonth() {
+    var anchor = parseISO(ui.anchor) || new Date();
+    var first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+    el("tl-period").textContent =
+      first.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+
+    var grid = el("cal-grid");
+    grid.textContent = "";
+
+    var start = startOfWeek(first);
+    var today = todayISO();
+    var big = state.settings.date || "";
+    var frag = document.createDocumentFragment();
+
+    for (var i = 0; i < 42; i++) {
+      var day = addDays(start, i);
+      var iso = isoOf(day);
+      var list = tasksOn(iso);
+
+      var cell = document.createElement("button");
+      cell.type = "button";
+      cell.className = "cal-day";
+      if (day.getMonth() !== first.getMonth()) cell.className += " out";
+      if (iso === today) cell.className += " today";
+      if (iso === big) cell.className += " bigday";
+      if (iso === ui.selected) cell.className += " sel";
+      cell.dataset.date = iso;
+      cell.setAttribute("aria-label", prettyDay(iso) + ", " + list.length + " tasks");
+
+      var num = document.createElement("span");
+      num.className = "d";
+      num.textContent = String(day.getDate());
+      cell.appendChild(num);
+
+      var dots = document.createElement("span");
+      dots.className = "cal-dots";
+      list.slice(0, 4).forEach(function (t) {
+        var dot = document.createElement("i");
+        if (t.done) dot.className = "done";
+        else if (isOverdue(t)) dot.className = "over";
+        dots.appendChild(dot);
+      });
+      cell.appendChild(dots);
+
+      var chips = document.createElement("span");
+      chips.className = "cal-chips";
+      list.slice(0, 2).forEach(function (t) {
+        var chip = document.createElement("span");
+        chip.className = t.done ? "done" : isOverdue(t) ? "over" : "";
+        chip.textContent = t.title || "Untitled task";
+        chips.appendChild(chip);
+      });
+      if (list.length > 2) {
+        var more = document.createElement("b");
+        more.textContent = "+" + (list.length - 2) + " more";
+        chips.appendChild(more);
+      }
+      cell.appendChild(chips);
+
+      frag.appendChild(cell);
+    }
+
+    grid.appendChild(frag);
+    el("day-title").textContent = prettyDay(ui.selected);
+    fillTasks(el("day-list"), ui.selected, "Nothing planned for this day.");
+  }
+
+  el("cal-grid").addEventListener("click", function (e) {
+    var cell = e.target.closest(".cal-day");
+    if (!cell) return;
+    /* The anchor follows the selection, so switching to Week shows the week
+       that day sits in - and clicking a trailing day moves to its month. */
+    ui.selected = cell.dataset.date;
+    ui.anchor = cell.dataset.date;
+    renderTimeline();
+  });
+
+  function renderWeek() {
+    var anchor = parseISO(ui.anchor) || new Date();
+    var start = startOfWeek(anchor);
+    var end = addDays(start, 6);
+
+    var sameMonth = start.getMonth() === end.getMonth();
+    el("tl-period").textContent =
+      start.toLocaleDateString("en-GB", { day: "numeric", month: sameMonth ? undefined : "short" }) +
+      " – " + end.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+
+    var host = el("week");
+    host.textContent = "";
+    var today = todayISO();
+    var big = state.settings.date || "";
+    var frag = document.createDocumentFragment();
+
+    for (var i = 0; i < 7; i++) {
+      var day = addDays(start, i);
+      var iso = isoOf(day);
+
+      var card = document.createElement("section");
+      card.className = "wday" + (iso === today ? " today" : "") + (iso === big ? " bigday" : "");
+
+      var head = document.createElement("header");
+      var wd = document.createElement("span");
+      wd.className = "wd";
+      wd.textContent = day.toLocaleDateString("en-GB", { weekday: "short" });
+      var wdate = document.createElement("span");
+      wdate.className = "wdate";
+      wdate.textContent = day.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+      var add = document.createElement("button");
+      add.type = "button";
+      add.className = "icon-btn";
+      add.textContent = "+";
+      add.setAttribute("aria-label", "Add a task on " + prettyDay(iso));
+      (function (d) { add.addEventListener("click", function () { openTask(null, d); }); })(iso);
+      head.appendChild(wd);
+      head.appendChild(wdate);
+      head.appendChild(add);
+      card.appendChild(head);
+
+      /* An empty day is just its header: the dash told you nothing the
+         date line did not, and seven of them filled the screen. */
+      if (tasksOn(iso).length) {
+        var body = document.createElement("div");
+        fillTasks(body, iso, "—");
+        card.appendChild(body);
+      } else {
+        head.style.borderBottom = "none";
+      }
+
+      frag.appendChild(card);
+    }
+
+    host.appendChild(frag);
+  }
+
+  /* Everything at once, grouped: what is late, then what is coming month by
+     month, then what is already done. */
+  function renderOverview() {
+    var host = el("overview");
+    host.textContent = "";
+
+    var today = todayISO();
+    var late = [], done = [], ahead = [];
+
+    state.tasks.forEach(function (t) {
+      if (t.done) done.push(t);
+      else if (t.date && t.date < today) late.push(t);
+      else ahead.push(t);
+    });
+
+    if (!state.tasks.length) {
+      var empty = document.createElement("div");
+      empty.className = "ov-group";
+      var p = document.createElement("p");
+      p.className = "day-empty";
+      p.textContent = "No tasks yet. Add one and it will show up here and on the calendar.";
+      empty.appendChild(p);
+      host.appendChild(empty);
+      return;
+    }
+
+    function group(label, list, cls) {
+      if (!list.length) return;
+      var sec = document.createElement("section");
+      sec.className = "ov-group" + (cls ? " " + cls : "");
+
+      var head = document.createElement("h3");
+      head.className = "ov-head";
+      head.appendChild(document.createTextNode(label));
+      var count = document.createElement("b");
+      count.textContent = String(list.length);
+      head.appendChild(count);
+      sec.appendChild(head);
+
+      var body = document.createElement("div");
+      list.sort(byTaskOrder).forEach(function (t) { body.appendChild(taskEl(t, true)); });
+      sec.appendChild(body);
+
+      host.appendChild(sec);
+    }
+
+    group("Late", late, "late");
+
+    /* upcoming, bucketed by month so a long engagement stays readable */
+    var buckets = {}, order = [];
+    ahead.sort(byTaskOrder).forEach(function (t) {
+      var key = t.date ? t.date.slice(0, 7) : "no-date";
+      if (!buckets[key]) { buckets[key] = []; order.push(key); }
+      buckets[key].push(t);
+    });
+    order.sort(function (a, b) {
+      if (a === "no-date") return 1;
+      if (b === "no-date") return -1;
+      return a < b ? -1 : a > b ? 1 : 0;
+    });
+    order.forEach(function (key) {
+      group(key === "no-date" ? "No date" : monthLabel(key), buckets[key]);
+    });
+
+    group("Done", done, "done-group");
+  }
+
+  function renderTimeline() {
+    if (el("page-timeline").hidden) return;
+    renderProgress();
+    renderTimelineDock();
+
+    var month = ui.view === "month";
+    var all = ui.view === "all";
+
+    el("cal").hidden = !month;
+    el("day-panel").hidden = !month;
+    el("week").hidden = month || all;
+    el("overview").hidden = !all;
+
+    /* Stepping through periods means nothing when everything is on screen,
+       and the masthead already carries the date and the countdown. */
+    el("tl-nav").hidden = all;
+
+    if (all) {
+      renderOverview();
+    } else if (month) {
+      renderMonth();
+    } else {
+      renderWeek();
+    }
+  }
+
+  /* ---------- the task sheet ----------
+     Same deal as the item sheet: typed changes are saved as you go, and
+     "Discard" puts it back the way it was when the sheet opened. */
+
+  var taskId = null;
+  var taskBefore = null;
+  var taskTimer = null;
+  var taskPending = false;
+  var taskUndoing = false;
+
+  function readTask() {
+    return { title: el("k-title").value.trim(), date: el("k-date").value };
+  }
+
+  function commitTask() {
+    clearTimeout(taskTimer);
+    taskTimer = null;
+    if (!taskPending || taskUndoing) { taskPending = false; return; }
+    taskPending = false;
+
+    var d = readTask();
+    if (taskId) {
+      patchTask(taskId, { title: d.title || "Untitled task", date: d.date });
+    } else if (d.title) {
+      taskId = addTask({ title: d.title, date: d.date || ui.selected });
+      el("k-delete-wrap").hidden = false;
+      el("k-cancel").textContent = "Undo changes";
+    }
+  }
+
+  function touchTask() {
+    taskPending = true;
+    clearTimeout(taskTimer);
+    taskTimer = setTimeout(commitTask, 400);
+  }
+
+  function openTask(id, dateHint) {
+    taskId = id || null;
+    var t = id ? findTask(id) : null;
+
+    clearTimeout(taskTimer);
+    taskTimer = null;
+    taskPending = false;
+    taskUndoing = false;
+    taskBefore = t ? { id: t.id, title: t.title, date: t.date, done: t.done } : null;
+
+    el("task-editor-title").textContent = t ? "Edit task" : "Add task";
+    el("k-cancel").textContent = t ? "Undo changes" : "Discard";
+    el("k-title").value = t ? t.title : "";
+    el("k-date").value = t ? t.date : (dateHint || ui.selected || todayISO());
+    el("k-delete-wrap").hidden = !t;
+    el("k-done").hidden = !t;
+    el("k-done").textContent = t && t.done ? "Mark not done" : "Mark done";
+
+    showSheet(el("task-editor"));
+
+    /* Don't auto-focus on a phone: the keyboard would cover the sheet. */
+    if (window.matchMedia("(min-width: 720px)").matches) {
+      setTimeout(function () { el("k-title").focus(); }, 30);
+    }
+  }
+
+  ["k-title", "k-date"].forEach(function (id) {
+    el(id).addEventListener("input", touchTask);
+    el(id).addEventListener("change", touchTask);
+    el(id).addEventListener("blur", commitTask);
+  });
+
+  el("k-done").addEventListener("click", function () {
+    commitTask();
+    if (!taskId) return;
+    var t = findTask(taskId);
+    if (!t) return;
+    patchTask(taskId, { done: !t.done });
+    el("k-done").textContent = t.done ? "Mark not done" : "Mark done";
+  });
+
+  el("k-cancel").addEventListener("click", function () {
+    taskUndoing = true;
+    clearTimeout(taskTimer);
+    taskTimer = null;
+    taskPending = false;
+    if (taskBefore) patchTask(taskBefore.id, taskBefore);
+    else if (taskId) removeTask(taskId);
+    taskId = null;
+    el("task-editor").close();
+  });
+
+  el("k-delete").addEventListener("click", function () {
+    var t = findTask(taskId);
+    if (!t) return;
+    if (window.confirm('Remove "' + (t.title || "this task") + '" from the timeline?')) {
+      taskUndoing = true;
+      clearTimeout(taskTimer);
+      taskPending = false;
+      removeTask(taskId);
+      taskId = null;
+      el("task-editor").close();
+    }
+  });
+
+  el("task-form").addEventListener("submit", commitTask);
+  el("task-editor").addEventListener("close", function () {
+    commitTask();
+    taskUndoing = false;
+    taskId = null;
+    onSheetClose();
+  });
 
   function daysToWedding() {
     var d = state.settings.date;
@@ -1876,9 +2938,11 @@
       el("headline-note").textContent = "Left to spend after everything you've booked.";
     }
 
-    el("dock-key").textContent = over ? "Over budget by" : "Budget remaining";
-    el("dock-value").textContent = blank ? "—" : money(Math.abs(t.remaining));
-    el("dock-value").classList.toggle("over", over);
+    if (ui.page !== "timeline") {
+      el("dock-key").textContent = over ? "Over budget by" : "Budget remaining";
+      el("dock-value").textContent = blank ? "—" : money(Math.abs(t.remaining));
+      el("dock-value").classList.toggle("over", over);
+    }
 
     var base = Math.max(t.budget, t.cost, 1);
     var pct = function (v) { return Math.max(0, Math.min(100, (v / base) * 100)); };
@@ -2162,7 +3226,10 @@
     editingId = null;
   });
 
-  el("add-phone").addEventListener("click", function () { openEditor(null); });
+  el("add-phone").addEventListener("click", function () {
+    if (ui.page === "timeline") openTask(null, ui.selected);
+    else openEditor(null);
+  });
   el("add-desktop").addEventListener("click", function () { openEditor(null); });
 
   /* ---------- settings: same deal, saved as you type ---------- */
@@ -2422,6 +3489,7 @@
 
   /* ---------- go ---------- */
 
+  showPage(ui.page);
   start();
 })();
 </script>
