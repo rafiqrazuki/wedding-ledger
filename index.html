@@ -1364,6 +1364,14 @@
       <button class="btn-primary" type="button" id="tl-add">Add task</button>
     </div>
 
+    <section class="ov-group" id="tl-empty" hidden>
+      <div class="empty">
+        <span class="mark">&#10087;</span>
+        <p id="tl-empty-note">Nothing planned yet.</p>
+        <button class="btn" type="button" id="tl-seed">Start with the usual list</button>
+      </div>
+    </section>
+
     <div class="cal" id="cal" hidden>
       <div class="cal-dow">
         <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span>
@@ -1563,6 +1571,37 @@
     ["Invitation cards", "Cards & gifts"],
     ["Door gifts", "Cards & gifts"],
     ["Kompang / emcee", "Entertainment"]
+  ];
+
+  /* The usual run-up to a Malay wedding, counted back from the day itself.
+     Anything whose moment has already passed lands on today instead, so a
+     short engagement gets a to-do list rather than a pile of late tasks. */
+  var TASK_STARTER = [
+    ["Confirm the date with both families", 300],
+    ["Book the hall or venue", 270],
+    ["Book the caterer", 240],
+    ["Book photographer and videographer", 210],
+    ["Book the pelamin and decorator", 180],
+    ["Book hair and makeup", 170],
+    ["Order the bride's baju pengantin", 150],
+    ["Order the groom's baju pengantin", 150],
+    ["Agree the guest list", 120],
+    ["Order invitation cards", 100],
+    ["Book kompang or entertainment", 90],
+    ["Decide the hantaran items", 75],
+    ["Hair and makeup trial", 60],
+    ["Order the wedding cake", 50],
+    ["Order door gifts", 45],
+    ["Send out the invitations", 45],
+    ["Food tasting with the caterer", 40],
+    ["Final baju fitting", 25],
+    ["Confirm the headcount with the caterer", 21],
+    ["Confirm setup time with the decorator", 14],
+    ["Settle the remaining vendor payments", 10],
+    ["Collect the baju pengantin", 7],
+    ["Arrange the hantaran trays", 3],
+    ["Family briefing and rehearsal", 2],
+    ["Majlis — the big day", 0]
   ];
 
   var LS_KEY = "wedding-ledger-v1";
@@ -2647,10 +2686,46 @@
     group("Done", done, "done-group");
   }
 
+  function seedTasks() {
+    var wed = parseISO(state.settings.date);
+    if (!wed) return;
+
+    var today = todayISO();
+    var base = Date.now();
+    var made = [];
+
+    TASK_STARTER.forEach(function (s, i) {
+      var iso = isoOf(addDays(wed, -s[1]));
+      if (iso < today) iso = today;          // its usual moment has gone; it is due now
+      var id = newId();
+      state.tasks.push({ id: id, title: s[0], date: iso, done: false, position: base + i });
+      made.push(id);
+    });
+
+    state.tasks.sort(byTaskOrder);
+    renderTimeline();
+    cacheSave();
+    made.forEach(function (id) { pushTask(id); });
+  }
+
+  el("tl-seed").addEventListener("click", seedTasks);
+
   function renderTimeline() {
     if (el("page-timeline").hidden) return;
     renderProgress();
     renderTimelineDock();
+
+    /* The offer to start from the usual run-up, while there is nothing yet. */
+    var bare = state.tasks.length === 0;
+    var dated = !!parseISO(state.settings.date);
+    el("tl-empty").hidden = !bare;
+    if (bare) {
+      el("tl-empty-note").textContent = dated
+        ? "Nothing planned yet. Start from the usual wedding run-up, counted back from " +
+          shortDate(state.settings.date) + " — then change, move or delete whatever you like."
+        : "Nothing planned yet. Set your wedding date under Budget & details first; the starter list is dated from it.";
+      el("tl-seed").hidden = !dated;
+    }
 
     var month = ui.view === "month";
     var all = ui.view === "all";

@@ -27,6 +27,11 @@ On the Timeline page:
 - **All** groups everything: late first, then month by month, then done.
 - Weeks start on Sunday. Today is circled, and the wedding day is ringed in
   brass.
+- With no tasks yet, the page offers the usual Malay wedding run-up, dated
+  back from the wedding day (`TASK_STARTER` in index.html). Anything whose
+  usual moment has already passed is placed on today rather than created
+  already late. Seeded tasks are ordinary tasks: rename, re-date or delete
+  them like any other.
 
 ## Where the data lives
 
