@@ -17,6 +17,12 @@ tasks on a calendar) and **Sponsors** (who is covering what).
 - A bar splits the budget into paid / still owed / unspoken-for, and turns red
   if the bookings overshoot.
 - Each item shows its own balance and a status: Unpaid, Deposit paid, Settled.
+- Set **who paid** for each item, from the people sharing the budget. What
+  that person has actually handed over comes off their own share, so a
+  "Who is paying" card shows each of them what they have spent and what is
+  left of their part (red once they go over it). Items with nobody set fall
+  into a "Not assigned" row. The overall totals count every item whatever
+  the payer.
 
 On the Timeline page:
 
@@ -36,7 +42,8 @@ On the Timeline page:
 On the Sponsors page:
 
 - Record who is covering something for you and what it is, with an optional
-  rough value.
+  rough value and what they have paid so far — the same Worth / Paid / Left
+  columns and Unpaid / Deposit paid / Settled statuses as the budget list.
 - **Deliberately outside the budget.** A sponsored thing is not money the
   couple is spending, so nothing here reaches `totals()`: budget, total cost,
   deposits, balance and cash in hand are all unchanged by it. Sponsored

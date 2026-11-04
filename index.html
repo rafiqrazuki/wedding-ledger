@@ -888,28 +888,25 @@
 
   #sponsor-editor .sp-note { margin-top: -4px; }
 
-  .sp-row {
+  /* ---------- who paid for what ---------- */
+
+  .payer {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: 2px 12px;
+    grid-template-areas:
+      "name paid"
+      "bar  bar"
+      "note note";
+    gap: 5px 12px;
     align-items: center;
-    width: 100%;
-    text-align: left;
-    font: inherit;
-    color: inherit;
-    background: none;
-    border: none;
+    padding: 12px 14px;
     border-bottom: 1px solid var(--line-soft);
-    border-radius: 0;
-    padding: 11px 14px;
-    min-height: var(--tap);
   }
 
-  .sp-row:last-child { border-bottom: none; }
-  .sp-row:hover { background: color-mix(in srgb, var(--surface-2) 45%, transparent); }
+  .payer:last-child { border-bottom: none; }
 
-  .sp-who {
-    grid-column: 1;
+  .py-name {
+    grid-area: name;
     font-size: 15px;
     font-weight: 500;
     overflow: hidden;
@@ -917,25 +914,46 @@
     white-space: nowrap;
   }
 
-  .sp-what {
-    grid-column: 1;
-    font-size: 12.5px;
-    color: var(--ink-3);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  /* brass, so a sponsored figure never reads as one of the budget's own */
-  .sp-val {
-    grid-column: 2;
-    grid-row: 1 / span 2;
+  .py-paid {
+    grid-area: paid;
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
     font-size: 14px;
-    color: var(--brass);
     white-space: nowrap;
   }
+
+  .py-bar {
+    grid-area: bar;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    border: 1px solid var(--line-soft);
+    overflow: hidden;
+  }
+
+  .py-bar i { display: block; height: 100%; background: var(--accent); transition: width .35s ease; }
+  .py-bar i.over { background: var(--bad); }
+
+  .py-note {
+    grid-area: note;
+    font-size: 11.5px;
+    color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .py-note b { color: var(--ink-2); font-weight: 600; }
+  .py-note .over { color: var(--bad); font-weight: 600; }
+
+  /* the payer's name, on a ledger row */
+  .r-payer {
+    font-size: 12.5px;
+    color: var(--ink-2);
+    white-space: nowrap;
+    flex: none;
+  }
+
+  /* keep the payer and the category from reading as one phrase */
+  .r-payer + .r-cat::before { content: "· "; }
 
   /* ---------- timeline ---------- */
 
@@ -1392,6 +1410,11 @@
     </div>
   </dl>
 
+  <section class="ov-group" id="payers" hidden>
+    <h3 class="ov-head">Who is paying <b id="payers-note"></b></h3>
+    <div id="payers-list"></div>
+  </section>
+
   <div class="ledger-head">
     <h2>The list</h2>
     <span class="count" id="item-count"></span>
@@ -1486,8 +1509,13 @@
       </div>
     </section>
 
-    <section class="ov-group" id="sp-card" hidden>
-      <h3 class="ov-head">Who is covering what <b id="sp-count">0</b></h3>
+    <section class="ledger" id="sp-card" hidden>
+      <div class="colhead">
+        <span>Sponsor</span>
+        <span class="t-r">Worth</span>
+        <span class="t-r">Paid</span>
+        <span class="t-r">Left</span>
+      </div>
       <div id="sp-list"></div>
     </section>
 
@@ -1522,6 +1550,11 @@
     <div class="field">
       <label class="clabel" for="e-cat">Category</label>
       <span class="select-wrap"><select id="e-cat"></select></span>
+    </div>
+
+    <div class="field">
+      <label class="clabel" for="e-payer">Paid by</label>
+      <span class="select-wrap"><select id="e-payer"></select></span>
     </div>
 
     <div class="duo">
@@ -1664,13 +1697,29 @@
              autocapitalize="sentences" enterkeyhint="next">
     </div>
 
-    <div class="field">
-      <label class="clabel" for="p-val">Roughly worth (optional)</label>
-      <span class="money-wrap">
-        <i class="prefix" id="p-val-cur">RM</i>
-        <input id="p-val" class="money-in" inputmode="decimal" enterkeyhint="done" placeholder="0.00">
-      </span>
+    <div class="duo">
+      <div class="field">
+        <label class="clabel" for="p-val">Roughly worth</label>
+        <span class="money-wrap">
+          <i class="prefix" id="p-val-cur">RM</i>
+          <input id="p-val" class="money-in" inputmode="decimal" enterkeyhint="next" placeholder="0.00">
+        </span>
+      </div>
+      <div class="field">
+        <label class="clabel" for="p-dep">Paid so far</label>
+        <span class="money-wrap">
+          <i class="prefix" id="p-dep-cur">RM</i>
+          <input id="p-dep" class="money-in" inputmode="decimal" enterkeyhint="done" placeholder="0.00">
+        </span>
+      </div>
     </div>
+
+    <div class="readout">
+      <span class="k">Still to settle</span>
+      <span class="v" id="p-balance">0.00</span>
+    </div>
+
+    <button class="btn" type="button" id="p-settle">Mark fully paid</button>
 
     <p class="sp-note">Only for your own record. It is never added to the budget,
       the total cost or anything you still owe.</p>
@@ -1834,6 +1883,7 @@
       id: v && v.id ? String(v.id) : newId(),
       title: v && v.title ? String(v.title) : "",
       category: v && v.category ? String(v.category) : "Other",
+      payer: v && v.payer ? String(v.payer) : "",
       cost: num(v && v.cost),
       deposit: num(v && v.deposit)
     };
@@ -1883,6 +1933,7 @@
       who: v && v.who ? String(v.who) : "",
       what: v && v.what ? String(v.what) : "",
       value: num(v && v.value),
+      deposit: num(v && v.deposit),
       position: (v && v.position) || 0
     };
   }
@@ -1894,11 +1945,16 @@
     return null;
   }
 
-  function sponsoredTotal() {
-    var t = 0;
-    state.sponsors.forEach(function (s) { t += num(s.value); });
-    return t;
+  function sponsorTotals() {
+    var worth = 0, paid = 0;
+    state.sponsors.forEach(function (s) {
+      worth += num(s.value);
+      paid += num(s.deposit);
+    });
+    return { worth: worth, paid: paid, left: worth - paid };
   }
+
+  function sponsoredTotal() { return sponsorTotals().worth; }
 
   function normalizeTask(v) {
     return {
@@ -2012,6 +2068,7 @@
       kind: "item",
       title: it.title,
       category: it.category || "Other",
+      payer: it.payer || "",
       cost: num(it.cost),
       deposit: num(it.deposit),
       position: it.position || 0,
@@ -2038,6 +2095,7 @@
       who: s.who,
       what: s.what,
       value: num(s.value),
+      deposit: num(s.deposit),
       position: s.position || 0,
       deleted: false
     };
@@ -2049,6 +2107,7 @@
       who: d.who || "",
       what: d.what || "",
       value: num(d.value),
+      deposit: num(d.deposit),
       position: d.position || 0
     };
   }
@@ -2081,6 +2140,7 @@
       id: id,
       title: d.title || "",
       category: d.category || "Other",
+      payer: d.payer || "",
       cost: num(d.cost),
       deposit: num(d.deposit),
       position: d.position || 0
@@ -2180,6 +2240,7 @@
     cacheSave();
     renderSummary();
     renderList();
+    renderPayers();
   }
 
   /* ---- pushing ---- */
@@ -2288,12 +2349,14 @@
       id: newItemId,
       title: data.title,
       category: data.category || "Other",
+      payer: data.payer || "",
       cost: num(data.cost),
       deposit: num(data.deposit),
       position: Date.now()
     });
     renderSummary();
     renderList();
+    renderPayers();
     cacheSave();
     pushItem(newItemId);
     return newItemId;
@@ -2305,6 +2368,7 @@
     for (var k in patch) it[k] = patch[k];
     renderSummary();
     renderList();
+    renderPayers();
     cacheSave();
     pushItem(id);
   }
@@ -2316,6 +2380,7 @@
     state.items = state.items.filter(function (i) { return i.id !== id; });
     renderSummary();
     renderList();
+    renderPayers();
     cacheSave();
     queueRow(id, row);
   }
@@ -2327,6 +2392,7 @@
       who: data.who || "",
       what: data.what || "",
       value: num(data.value),
+      deposit: num(data.deposit),
       position: Date.now()
     });
     renderSponsors();
@@ -2346,7 +2412,7 @@
 
   function removeSponsor(id) {
     var s = findSponsor(id);
-    var row = s ? sponsorRow(s) : { kind: "sponsor", who: "", what: "", value: 0, position: 0 };
+    var row = s ? sponsorRow(s) : { kind: "sponsor", who: "", what: "", value: 0, deposit: 0, position: 0 };
     row.deleted = true;                       // tombstone: the table has no delete policy
     state.sponsors = state.sponsors.filter(function (x) { return x.id !== id; });
     renderSponsors();
@@ -2579,7 +2645,7 @@
 
   /* ---------- rendering ---------- */
 
-  function renderAll() { renderHeader(); renderSummary(); renderList(); renderTimeline(); renderSponsors(); }
+  function renderAll() { renderHeader(); renderSummary(); renderList(); renderPayers(); renderTimeline(); renderSponsors(); }
 
   /* ---------- which page is showing ----------
      Per device, not synced: which page you were last on is your business,
@@ -2633,11 +2699,10 @@
     if (el("page-sponsors").hidden) return;
 
     var list = state.sponsors.slice().sort(byPosition);
-    var total = sponsoredTotal();
+    var t = sponsorTotals();
 
     el("sp-empty").hidden = list.length > 0;
     el("sp-card").hidden = list.length === 0;
-    el("sp-count").textContent = String(list.length);
 
     var sum = el("sp-summary");
     sum.textContent = "";
@@ -2647,39 +2712,42 @@
       var b = document.createElement("b");
       b.textContent = list.length + (list.length === 1 ? " sponsor" : " sponsors");
       sum.appendChild(b);
-      if (total) sum.appendChild(document.createTextNode(" · " + money(total) + " covered"));
+      if (t.worth) sum.appendChild(document.createTextNode(" · " + money(t.worth) + " covered"));
+      if (t.left > 0) sum.appendChild(document.createTextNode(" · " + money(t.left) + " to settle"));
     }
 
     /* the bottom bar, while this page is the one showing */
     el("dock-key").textContent = "Covered by others";
-    el("dock-value").textContent = total ? money(total) : (list.length ? "—" : "—");
+    el("dock-value").textContent = t.worth ? money(t.worth) : "—";
     el("dock-value").classList.remove("over");
 
     var host = el("sp-list");
     host.textContent = "";
+
     list.forEach(function (s) {
+      var worth = num(s.value), paid = num(s.deposit), left = worth - paid;
+      var st = statusOf({ cost: worth, deposit: paid });
+
+      /* the same row as the budget list, so both read alike */
       var row = document.createElement("button");
       row.type = "button";
-      row.className = "sp-row";
+      row.className = "row";
       row.dataset.id = s.id;
-      row.setAttribute("aria-label", "Edit " + (s.who || "sponsor"));
+      row.setAttribute("aria-label", "Edit " + (s.who || "sponsor") + ", " + money(left) + " still to settle");
 
-      var who = document.createElement("span");
-      who.className = "sp-who";
-      who.textContent = s.who || "Someone";
-      row.appendChild(who);
+      row.appendChild(span("r-title", s.who || "Someone"));
 
-      var what = document.createElement("span");
-      what.className = "sp-what";
-      what.textContent = s.what || "—";
-      row.appendChild(what);
+      var meta = document.createElement("span");
+      meta.className = "r-meta";
+      meta.appendChild(span("pill " + st.cls, st.text));
+      meta.appendChild(span("r-cat", s.what || "—"));
+      row.appendChild(meta);
 
-      if (num(s.value)) {
-        var val = document.createElement("span");
-        val.className = "sp-val";
-        val.textContent = money(num(s.value));
-        row.appendChild(val);
-      }
+      row.appendChild(span("r-cost", fmt(worth)));
+      row.appendChild(span("r-dep" + (paid ? "" : " zero"), fmt(paid)));
+      row.appendChild(span("r-bal" + (left === 0 ? " settled" : left < 0 ? " credit" : ""), fmt(left)));
+      row.appendChild(span("r-sub", "of " + fmt(worth)));
+      row.appendChild(span("chev", "›"));
 
       row.addEventListener("click", function () { openSponsor(s.id); });
       host.appendChild(row);
@@ -2698,8 +2766,15 @@
     return {
       who: el("p-who").value.trim(),
       what: el("p-what").value.trim(),
-      value: num(el("p-val").value)
+      value: num(el("p-val").value),
+      deposit: num(el("p-dep").value)
     };
+  }
+
+  function updateSponsorBalance() {
+    var worth = num(el("p-val").value), paid = num(el("p-dep").value);
+    el("p-balance").textContent = money(worth - paid);
+    el("p-settle").hidden = worth > 0 && paid >= worth;
   }
 
   function commitSponsor() {
@@ -2710,9 +2785,9 @@
 
     var d = readSponsor();
     if (sponsorId) {
-      patchSponsor(sponsorId, { who: d.who || "Someone", what: d.what, value: d.value });
-    } else if (d.who || d.what || d.value) {
-      sponsorId = addSponsor({ who: d.who || "Someone", what: d.what, value: d.value });
+      patchSponsor(sponsorId, { who: d.who || "Someone", what: d.what, value: d.value, deposit: d.deposit });
+    } else if (d.who || d.what || d.value || d.deposit) {
+      sponsorId = addSponsor({ who: d.who || "Someone", what: d.what, value: d.value, deposit: d.deposit });
       el("p-delete-wrap").hidden = false;
       el("p-cancel").textContent = "Undo changes";
     }
@@ -2732,15 +2807,19 @@
     sponsorTimer = null;
     sponsorPending = false;
     sponsorUndoing = false;
-    sponsorBefore = s ? { id: s.id, who: s.who, what: s.what, value: s.value } : null;
+    sponsorBefore = s ? { id: s.id, who: s.who, what: s.what, value: s.value, deposit: s.deposit } : null;
 
     el("sponsor-editor-title").textContent = s ? "Edit sponsor" : "Add sponsor";
     el("p-cancel").textContent = s ? "Undo changes" : "Discard";
     el("p-who").value = s ? s.who : "";
     el("p-what").value = s ? s.what : "";
     el("p-val").value = s && num(s.value) ? String(num(s.value)) : "";
+    el("p-dep").value = s && num(s.deposit) ? String(num(s.deposit)) : "";
     el("p-val-cur").textContent = cur();
+    el("p-dep-cur").textContent = cur();
     el("p-delete-wrap").hidden = !s;
+
+    updateSponsorBalance();
 
     showSheet(el("sponsor-editor"));
 
@@ -2750,9 +2829,18 @@
     }
   }
 
-  ["p-who", "p-what", "p-val"].forEach(function (id) {
-    el(id).addEventListener("input", touchSponsor);
+  ["p-who", "p-what", "p-val", "p-dep"].forEach(function (id) {
+    el(id).addEventListener("input", function () {
+      updateSponsorBalance();
+      touchSponsor();
+    });
     el(id).addEventListener("blur", commitSponsor);
+  });
+
+  el("p-settle").addEventListener("click", function () {
+    el("p-dep").value = el("p-val").value;
+    updateSponsorBalance();
+    touchSponsor();
   });
 
   el("sp-add").addEventListener("click", function () { openSponsor(null); });
@@ -3482,6 +3570,128 @@
     node.appendChild(document.createTextNode(fmt(value)));
   }
 
+  /* ---------- who paid what ----------
+     An item's payer is one of the budget's contributors. What they have
+     actually handed over (the deposit) comes off their own share, so each of
+     them can see what they have spent and what is left of their part. */
+
+  function payerName(id) {
+    var cs = state.settings.contributors || [];
+    for (var i = 0; i < cs.length; i++) {
+      if (cs[i].id === id) return cs[i].name || "Someone";
+    }
+    return "";
+  }
+
+  function fillPayerSelect(sel, current) {
+    sel.textContent = "";
+    var none = document.createElement("option");
+    none.value = "";
+    none.textContent = "Not set";
+    sel.appendChild(none);
+
+    (state.settings.contributors || []).forEach(function (c) {
+      var o = document.createElement("option");
+      o.value = c.id;
+      o.textContent = c.name || "Someone";
+      sel.appendChild(o);
+    });
+
+    sel.value = current || "";
+    if (sel.value !== (current || "")) sel.value = "";   // that payer is gone
+  }
+
+  function renderPayers() {
+    var cs = state.settings.contributors || [];
+    var card = el("payers");
+    var host = el("payers-list");
+
+    /* Only worth showing once there is both someone to pay and something
+       to pay for. */
+    if (!cs.length || !state.items.length) { card.hidden = true; return; }
+    card.hidden = false;
+    host.textContent = "";
+
+    var paidBy = {}, costBy = {}, loosePaid = 0, looseCost = 0, unassigned = 0;
+
+    state.items.forEach(function (it) {
+      var p = it.payer && payerName(it.payer) ? it.payer : "";
+      if (p) {
+        paidBy[p] = (paidBy[p] || 0) + num(it.deposit);
+        costBy[p] = (costBy[p] || 0) + num(it.cost);
+      } else {
+        loosePaid += num(it.deposit);
+        looseCost += num(it.cost);
+        unassigned++;
+      }
+    });
+
+    function row(name, share, paid, committed, note) {
+      var r = document.createElement("div");
+      r.className = "payer";
+
+      var n = document.createElement("span");
+      n.className = "py-name";
+      n.textContent = name;
+      r.appendChild(n);
+
+      var p = document.createElement("span");
+      p.className = "py-paid";
+      p.textContent = money(paid);
+      r.appendChild(p);
+
+      if (share > 0) {
+        var over = paid > share;
+        var bar = document.createElement("span");
+        bar.className = "py-bar";
+        var fill = document.createElement("i");
+        fill.className = over ? "over" : "";
+        fill.style.width = Math.max(0, Math.min(100, (paid / share) * 100)) + "%";
+        bar.appendChild(fill);
+        r.appendChild(bar);
+      }
+
+      var nt = document.createElement("span");
+      nt.className = "py-note";
+      if (share > 0) {
+        var left = share - paid;
+        if (left < 0) {
+          var o = document.createElement("span");
+          o.className = "over";
+          o.textContent = money(Math.abs(left)) + " over";
+          nt.appendChild(o);
+          nt.appendChild(document.createTextNode(" their " + money(share) + " share"));
+        } else {
+          var b = document.createElement("b");
+          b.textContent = money(left);
+          nt.appendChild(b);
+          nt.appendChild(document.createTextNode(" left of " + money(share)));
+        }
+        if (committed > paid) {
+          nt.appendChild(document.createTextNode(" · " + money(committed - paid) + " still owed on their items"));
+        }
+      } else {
+        nt.textContent = note || "";
+      }
+      r.appendChild(nt);
+
+      host.appendChild(r);
+    }
+
+    cs.forEach(function (c) {
+      row(c.name || "Someone", num(c.amount), paidBy[c.id] || 0, costBy[c.id] || 0, "");
+    });
+
+    if (unassigned) {
+      row("Not assigned", 0, loosePaid, looseCost,
+        unassigned + (unassigned === 1 ? " item has" : " items have") +
+        " nobody set as the payer" + (looseCost ? " · " + money(looseCost) + " booked" : ""));
+    }
+
+    var note = el("payers-note");
+    note.textContent = unassigned ? unassigned + " unassigned" : "";
+  }
+
   function statusOf(it) {
     var cost = num(it.cost), dep = num(it.deposit);
     if (cost > 0 && dep >= cost) return { cls: "pill-settled", text: "Settled" };
@@ -3539,6 +3749,8 @@
     var meta = document.createElement("span");
     meta.className = "r-meta";
     meta.appendChild(span("pill " + s.cls, s.text));
+    var who = it.payer && payerName(it.payer);
+    if (who) meta.appendChild(span("r-payer", who));
     meta.appendChild(span("r-cat", it.category || "Other"));
     row.appendChild(meta);
 
@@ -3592,6 +3804,7 @@
     return {
       title: el("e-title").value.trim(),
       category: eCat.value,
+      payer: el("e-payer").value,
       cost: num(el("e-cost").value),
       deposit: num(el("e-dep").value)
     };
@@ -3608,6 +3821,7 @@
       patchItem(editingId, {
         title: d.title || "Untitled item",
         category: d.category,
+        payer: d.payer,
         cost: d.cost,
         deposit: d.deposit
       });
@@ -3616,6 +3830,7 @@
       editingId = addItem({
         title: d.title || "Untitled item",
         category: d.category,
+        payer: d.payer,
         cost: d.cost,
         deposit: d.deposit
       });
@@ -3639,7 +3854,8 @@
     editorPending = false;
     editorUndoing = false;
     editorBefore = it
-      ? { id: it.id, title: it.title, category: it.category, cost: it.cost, deposit: it.deposit }
+      ? { id: it.id, title: it.title, category: it.category, payer: it.payer || "",
+          cost: it.cost, deposit: it.deposit }
       : null;
 
     el("editor-title").textContent = it ? "Edit item" : "Add item";
@@ -3659,6 +3875,7 @@
       eCat.appendChild(extra);
     }
     eCat.value = cat;
+    fillPayerSelect(el("e-payer"), it ? it.payer : "");
 
     updateEditorBalance();
     showSheet(el("editor"));
@@ -3685,6 +3902,7 @@
   });
 
   eCat.addEventListener("change", touchEditor);
+  el("e-payer").addEventListener("change", touchEditor);
 
   el("e-settle").addEventListener("click", function () {
     el("e-dep").value = el("e-cost").value;
@@ -3961,10 +4179,10 @@
   });
 
   el("export").addEventListener("click", function () {
-    var rows = [["Item", "Category", "Cost", "Deposit paid", "Balance"]];
+    var rows = [["Item", "Category", "Paid by", "Cost", "Deposit paid", "Balance"]];
     state.items.forEach(function (it) {
       rows.push([
-        it.title, it.category,
+        it.title, it.category, payerName(it.payer) || "",
         num(it.cost).toFixed(2),
         num(it.deposit).toFixed(2),
         (num(it.cost) - num(it.deposit)).toFixed(2)
@@ -3978,12 +4196,30 @@
     rows.push(["Balance to pay", "", t.due.toFixed(2)]);
     rows.push(["Budget remaining", "", t.remaining.toFixed(2)]);
 
+    var cs = state.settings.contributors || [];
+    if (cs.length) {
+      rows.push([]);
+      rows.push(["Spent by each person"]);
+      rows.push(["Who", "Their share", "Paid out", "Left of their share"]);
+      cs.forEach(function (c) {
+        var paid = 0;
+        state.items.forEach(function (it) { if (it.payer === c.id) paid += num(it.deposit); });
+        rows.push([c.name, num(c.amount).toFixed(2), paid.toFixed(2), (num(c.amount) - paid).toFixed(2)]);
+      });
+      var loose = 0;
+      state.items.forEach(function (it) {
+        if (!it.payer || !payerName(it.payer)) loose += num(it.deposit);
+      });
+      if (loose) rows.push(["Not assigned", "", loose.toFixed(2), ""]);
+    }
+
     if (state.sponsors.length) {
       rows.push([]);
       rows.push(["Sponsors — not counted in any figure above"]);
-      rows.push(["Who", "Covering", "Roughly worth"]);
+      rows.push(["Who", "Covering", "Roughly worth", "Paid so far", "Still to settle"]);
       state.sponsors.slice().sort(byPosition).forEach(function (s) {
-        rows.push([s.who, s.what, num(s.value) ? num(s.value).toFixed(2) : ""]);
+        var w = num(s.value), p = num(s.deposit);
+        rows.push([s.who, s.what, w ? w.toFixed(2) : "", p ? p.toFixed(2) : "", w || p ? (w - p).toFixed(2) : ""]);
       });
     }
 
