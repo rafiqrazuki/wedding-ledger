@@ -1,0 +1,47 @@
+name: Send task reminders
+
+# One run each morning: a nudge for anything due tomorrow, and again on the
+# day itself. Needs two repository secrets:
+#   SUPABASE_SERVICE_KEY  — reads the private tasks past row-level security
+#   VAPID_PRIVATE_KEY     — signs the push; its public half is in index.html
+
+on:
+  schedule:
+    - cron: "0 0 * * *"          # 08:00 Malaysia time (UTC+8)
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "List what would be sent, send nothing"
+        type: boolean
+        default: true
+      today:
+        description: "Pretend it is this date (YYYY-MM-DD)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: send-reminders
+  cancel-in-progress: false
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - run: npm ci
+
+      - name: Send
+        env:
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
+          TODAY: ${{ inputs.today }}
+        run: node send-reminders.mjs
