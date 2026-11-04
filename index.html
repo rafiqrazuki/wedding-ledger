@@ -844,7 +844,7 @@
 
   .tabs {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: 4px;
     padding: 4px;
     background: var(--surface-2);
@@ -866,6 +866,75 @@
     background: var(--surface);
     border-color: var(--line);
     color: var(--ink);
+  }
+
+  /* ---------- sponsors ---------- */
+
+  /* The page wrappers are single children of .page, so its gap does not reach
+     their contents; this one lays its own out. */
+  #page-sponsors {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .sp-note {
+    font-size: 13px;
+    color: var(--ink-3);
+    line-height: 1.45;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  #sponsor-editor .sp-note { margin-top: -4px; }
+
+  .sp-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px 12px;
+    align-items: center;
+    width: 100%;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--line-soft);
+    border-radius: 0;
+    padding: 11px 14px;
+    min-height: var(--tap);
+  }
+
+  .sp-row:last-child { border-bottom: none; }
+  .sp-row:hover { background: color-mix(in srgb, var(--surface-2) 45%, transparent); }
+
+  .sp-who {
+    grid-column: 1;
+    font-size: 15px;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sp-what {
+    grid-column: 1;
+    font-size: 12.5px;
+    color: var(--ink-3);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* brass, so a sponsored figure never reads as one of the budget's own */
+  .sp-val {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+    color: var(--brass);
+    white-space: nowrap;
   }
 
   /* ---------- timeline ---------- */
@@ -1269,6 +1338,7 @@
   <nav class="tabs" role="tablist" aria-label="Sections">
     <button type="button" id="tab-budget" role="tab" aria-selected="true">Budget</button>
     <button type="button" id="tab-timeline" role="tab" aria-selected="false">Timeline</button>
+    <button type="button" id="tab-sponsors" role="tab" aria-selected="false">Sponsors</button>
   </nav>
 
   <div id="page-budget">
@@ -1392,6 +1462,36 @@
     <div class="overview" id="overview" hidden></div>
 
   </div><!-- /page-timeline -->
+
+  <div id="page-sponsors" hidden>
+
+    <div class="tl-head">
+      <h2>Sponsors</h2>
+      <span class="tl-progress" id="sp-summary"></span>
+    </div>
+
+    <p class="sp-note">Who is covering something for you — the cake, the kompang, the cars.
+      Counted separately: nothing here touches your budget, costs or balance.</p>
+
+    <div class="tl-bar">
+      <span style="flex:1"></span>
+      <button class="btn-primary" type="button" id="sp-add">Add sponsor</button>
+    </div>
+
+    <section class="ov-group" id="sp-empty" hidden>
+      <div class="empty">
+        <span class="mark">&#10087;</span>
+        <p>No sponsors yet. Add whoever is covering something and what it is —
+           put a value on it only if you want to know what it saved you.</p>
+      </div>
+    </section>
+
+    <section class="ov-group" id="sp-card" hidden>
+      <h3 class="ov-head">Who is covering what <b id="sp-count">0</b></h3>
+      <div id="sp-list"></div>
+    </section>
+
+  </div><!-- /page-sponsors -->
 
   <footer class="footer">
     <span class="sync" id="sync">Saved on this device</span>
@@ -1546,6 +1646,47 @@
   </form>
 </dialog>
 
+<dialog id="sponsor-editor" aria-labelledby="sponsor-editor-title">
+  <div class="grab"></div>
+  <form class="sheet" id="sponsor-form" method="dialog" autocomplete="off">
+   <div class="sheet-body">
+    <h2 id="sponsor-editor-title">Add sponsor</h2>
+
+    <div class="field">
+      <label class="clabel" for="p-who">Who</label>
+      <input id="p-who" placeholder="Mak Long, Pak Su, office colleagues&hellip;"
+             autocapitalize="words" enterkeyhint="next">
+    </div>
+
+    <div class="field">
+      <label class="clabel" for="p-what">Covering</label>
+      <input id="p-what" placeholder="Wedding cake, kompang, bridal car&hellip;"
+             autocapitalize="sentences" enterkeyhint="next">
+    </div>
+
+    <div class="field">
+      <label class="clabel" for="p-val">Roughly worth (optional)</label>
+      <span class="money-wrap">
+        <i class="prefix" id="p-val-cur">RM</i>
+        <input id="p-val" class="money-in" inputmode="decimal" enterkeyhint="done" placeholder="0.00">
+      </span>
+    </div>
+
+    <p class="sp-note">Only for your own record. It is never added to the budget,
+      the total cost or anything you still owe.</p>
+   </div>
+
+    <div class="sheet-actions">
+      <button class="btn" type="button" id="p-cancel">Discard</button>
+      <button class="btn-primary" type="submit">Done</button>
+    </div>
+
+    <div class="sheet-foot" id="p-delete-wrap" hidden>
+      <button class="btn-danger" type="button" id="p-delete">Remove this sponsor</button>
+    </div>
+  </form>
+</dialog>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 (function () {
@@ -1643,7 +1784,7 @@
     state.settings.budget = budgetTotal();
   }
 
-  var state = { settings: defaults(), items: [], tasks: [] };
+  var state = { settings: defaults(), items: [], tasks: [], sponsors: [] };
   var editingId = null;
   var storageOK = true;
 
@@ -1732,6 +1873,33 @@
     return d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
   }
 
+  /* ---------- sponsors ----------
+     Deliberately apart from the ledger: a sponsored thing is not money the
+     couple is spending, so it never reaches totals(). */
+
+  function normalizeSponsor(v) {
+    return {
+      id: v && v.id ? String(v.id) : newId(),
+      who: v && v.who ? String(v.who) : "",
+      what: v && v.what ? String(v.what) : "",
+      value: num(v && v.value),
+      position: (v && v.position) || 0
+    };
+  }
+
+  function findSponsor(id) {
+    for (var i = 0; i < state.sponsors.length; i++) {
+      if (state.sponsors[i].id === id) return state.sponsors[i];
+    }
+    return null;
+  }
+
+  function sponsoredTotal() {
+    var t = 0;
+    state.sponsors.forEach(function (s) { t += num(s.value); });
+    return t;
+  }
+
   function normalizeTask(v) {
     return {
       id: v && v.id ? String(v.id) : newId(),
@@ -1815,6 +1983,7 @@
       }
       if (saved && Array.isArray(saved.items)) state.items = saved.items.map(normalizeItem);
       if (saved && Array.isArray(saved.tasks)) state.tasks = saved.tasks.map(normalizeTask).sort(byTaskOrder);
+      if (saved && Array.isArray(saved.sponsors)) state.sponsors = saved.sponsors.map(normalizeSponsor).sort(byPosition);
     } catch (e) { /* corrupt entry: keep the defaults rather than wiping it blindly */ }
     normalizeContributors();
   }
@@ -1863,6 +2032,27 @@
     };
   }
 
+  function sponsorRow(s) {
+    return {
+      kind: "sponsor",
+      who: s.who,
+      what: s.what,
+      value: num(s.value),
+      position: s.position || 0,
+      deleted: false
+    };
+  }
+
+  function rowToSponsor(id, d) {
+    return {
+      id: id,
+      who: d.who || "",
+      what: d.what || "",
+      value: num(d.value),
+      position: d.position || 0
+    };
+  }
+
   function taskRow(t) {
     return {
       kind: "task",
@@ -1898,7 +2088,7 @@
   }
 
   function applyRows(rows) {
-    var items = [], tasks = [];
+    var items = [], tasks = [], sponsors = [];
     rows.forEach(function (r) {
       var d = r.data || {};
       if (r.id === SETTINGS_ROW) {
@@ -1908,12 +2098,16 @@
         items.push(rowToItem(r.id, d));
       } else if (d.kind === "task" && !d.deleted) {
         tasks.push(rowToTask(r.id, d));
+      } else if (d.kind === "sponsor" && !d.deleted) {
+        sponsors.push(rowToSponsor(r.id, d));
       }
     });
     items.sort(byPosition);
     tasks.sort(byTaskOrder);
+    sponsors.sort(byPosition);
     state.items = items;
     state.tasks = tasks;
+    state.sponsors = sponsors;
     normalizeContributors();
   }
 
@@ -1931,6 +2125,24 @@
       renderSummary();
       return;
     }
+    if (d.kind === "sponsor") {
+      var si = -1;
+      for (var k2 = 0; k2 < state.sponsors.length; k2++) {
+        if (state.sponsors[k2].id === row.id) { si = k2; break; }
+      }
+      if (d.deleted) {
+        if (si >= 0) state.sponsors.splice(si, 1);
+      } else if (si >= 0) {
+        state.sponsors[si] = rowToSponsor(row.id, d);
+      } else {
+        state.sponsors.push(rowToSponsor(row.id, d));
+      }
+      state.sponsors.sort(byPosition);
+      cacheSave();
+      renderSponsors();
+      return;
+    }
+
     if (d.kind === "task") {
       var ti = -1;
       for (var j = 0; j < state.tasks.length; j++) {
@@ -1988,6 +2200,11 @@
   function pushTask(id) {
     var t = findTask(id);
     if (t) queueRow(id, taskRow(t));
+  }
+
+  function pushSponsor(id) {
+    var s = findSponsor(id);
+    if (s) queueRow(id, sponsorRow(s));
   }
 
   function pushSettings() {
@@ -2099,6 +2316,40 @@
     state.items = state.items.filter(function (i) { return i.id !== id; });
     renderSummary();
     renderList();
+    cacheSave();
+    queueRow(id, row);
+  }
+
+  function addSponsor(data) {
+    var id = newId();
+    state.sponsors.push({
+      id: id,
+      who: data.who || "",
+      what: data.what || "",
+      value: num(data.value),
+      position: Date.now()
+    });
+    renderSponsors();
+    cacheSave();
+    pushSponsor(id);
+    return id;
+  }
+
+  function patchSponsor(id, patch) {
+    var s = findSponsor(id);
+    if (!s) return;
+    for (var k in patch) s[k] = patch[k];
+    renderSponsors();
+    cacheSave();
+    pushSponsor(id);
+  }
+
+  function removeSponsor(id) {
+    var s = findSponsor(id);
+    var row = s ? sponsorRow(s) : { kind: "sponsor", who: "", what: "", value: 0, position: 0 };
+    row.deleted = true;                       // tombstone: the table has no delete policy
+    state.sponsors = state.sponsors.filter(function (x) { return x.id !== id; });
+    renderSponsors();
     cacheSave();
     queueRow(id, row);
   }
@@ -2257,7 +2508,7 @@
       if (res.error) throw res.error;
       var rows = res.data || [];
 
-      if (!rows.length && (state.items.length || state.tasks.length || num(state.settings.budget))) {
+      if (!rows.length && (state.items.length || state.tasks.length || state.sponsors.length || num(state.settings.budget))) {
         /* Nothing online yet but this phone already has a list: send it up
            rather than wiping it. */
         pushSettings();
@@ -2268,6 +2519,10 @@
         state.tasks.forEach(function (t) {
           if (!t.position) t.position = Date.now();
           pushTask(t.id);
+        });
+        state.sponsors.forEach(function (s) {
+          if (!s.position) s.position = Date.now();
+          pushSponsor(s.id);
         });
       } else {
         applyRows(rows);
@@ -2324,13 +2579,14 @@
 
   /* ---------- rendering ---------- */
 
-  function renderAll() { renderHeader(); renderSummary(); renderList(); renderTimeline(); }
+  function renderAll() { renderHeader(); renderSummary(); renderList(); renderTimeline(); renderSponsors(); }
 
   /* ---------- which page is showing ----------
      Per device, not synced: which page you were last on is your business,
      not something to push at the other phone. */
 
   var UI_KEY = "wedding-ledger-ui";
+  var PAGES = ["budget", "timeline", "sponsors"];
   var ui = { page: "budget", view: "month", anchor: todayISO(), selected: todayISO() };
 
   (function loadUi() {
@@ -2338,7 +2594,7 @@
       var raw = localStorage.getItem(UI_KEY);
       if (!raw) return;
       var saved = JSON.parse(raw);
-      if (saved && (saved.page === "budget" || saved.page === "timeline")) ui.page = saved.page;
+      if (saved && PAGES.indexOf(saved.page) >= 0) ui.page = saved.page;
       if (saved && (saved.view === "month" || saved.view === "week" || saved.view === "all")) ui.view = saved.view;
     } catch (e) { /* defaults are fine */ }
   })();
@@ -2349,20 +2605,189 @@
   }
 
   function showPage(name) {
-    ui.page = name === "timeline" ? "timeline" : "budget";
-    var timeline = ui.page === "timeline";
-    el("page-budget").hidden = timeline;
-    el("page-timeline").hidden = !timeline;
-    el("tab-budget").setAttribute("aria-selected", String(!timeline));
-    el("tab-timeline").setAttribute("aria-selected", String(timeline));
-    el("add-phone").textContent = timeline ? "+  Add task" : "+  Add item";
-    el("export").hidden = timeline;
+    ui.page = PAGES.indexOf(name) >= 0 ? name : "budget";
+
+    PAGES.forEach(function (p) {
+      el("page-" + p).hidden = p !== ui.page;
+      el("tab-" + p).setAttribute("aria-selected", String(p === ui.page));
+    });
+
+    el("add-phone").textContent =
+      ui.page === "timeline" ? "+  Add task" :
+      ui.page === "sponsors" ? "+  Add sponsor" : "+  Add item";
+    el("export").hidden = ui.page !== "budget";
+
     saveUi();
-    if (timeline) renderTimeline(); else renderSummary();
+    if (ui.page === "timeline") renderTimeline();
+    else if (ui.page === "sponsors") renderSponsors();
+    else renderSummary();
   }
 
-  el("tab-budget").addEventListener("click", function () { showPage("budget"); });
-  el("tab-timeline").addEventListener("click", function () { showPage("timeline"); });
+  PAGES.forEach(function (p) {
+    el("tab-" + p).addEventListener("click", function () { showPage(p); });
+  });
+
+  /* ---------- who is covering what ---------- */
+
+  function renderSponsors() {
+    if (el("page-sponsors").hidden) return;
+
+    var list = state.sponsors.slice().sort(byPosition);
+    var total = sponsoredTotal();
+
+    el("sp-empty").hidden = list.length > 0;
+    el("sp-card").hidden = list.length === 0;
+    el("sp-count").textContent = String(list.length);
+
+    var sum = el("sp-summary");
+    sum.textContent = "";
+    if (!list.length) {
+      sum.textContent = "None yet";
+    } else {
+      var b = document.createElement("b");
+      b.textContent = list.length + (list.length === 1 ? " sponsor" : " sponsors");
+      sum.appendChild(b);
+      if (total) sum.appendChild(document.createTextNode(" · " + money(total) + " covered"));
+    }
+
+    /* the bottom bar, while this page is the one showing */
+    el("dock-key").textContent = "Covered by others";
+    el("dock-value").textContent = total ? money(total) : (list.length ? "—" : "—");
+    el("dock-value").classList.remove("over");
+
+    var host = el("sp-list");
+    host.textContent = "";
+    list.forEach(function (s) {
+      var row = document.createElement("button");
+      row.type = "button";
+      row.className = "sp-row";
+      row.dataset.id = s.id;
+      row.setAttribute("aria-label", "Edit " + (s.who || "sponsor"));
+
+      var who = document.createElement("span");
+      who.className = "sp-who";
+      who.textContent = s.who || "Someone";
+      row.appendChild(who);
+
+      var what = document.createElement("span");
+      what.className = "sp-what";
+      what.textContent = s.what || "—";
+      row.appendChild(what);
+
+      if (num(s.value)) {
+        var val = document.createElement("span");
+        val.className = "sp-val";
+        val.textContent = money(num(s.value));
+        row.appendChild(val);
+      }
+
+      row.addEventListener("click", function () { openSponsor(s.id); });
+      host.appendChild(row);
+    });
+  }
+
+  /* ---------- the sponsor sheet ---------- */
+
+  var sponsorId = null;
+  var sponsorBefore = null;
+  var sponsorTimer = null;
+  var sponsorPending = false;
+  var sponsorUndoing = false;
+
+  function readSponsor() {
+    return {
+      who: el("p-who").value.trim(),
+      what: el("p-what").value.trim(),
+      value: num(el("p-val").value)
+    };
+  }
+
+  function commitSponsor() {
+    clearTimeout(sponsorTimer);
+    sponsorTimer = null;
+    if (!sponsorPending || sponsorUndoing) { sponsorPending = false; return; }
+    sponsorPending = false;
+
+    var d = readSponsor();
+    if (sponsorId) {
+      patchSponsor(sponsorId, { who: d.who || "Someone", what: d.what, value: d.value });
+    } else if (d.who || d.what || d.value) {
+      sponsorId = addSponsor({ who: d.who || "Someone", what: d.what, value: d.value });
+      el("p-delete-wrap").hidden = false;
+      el("p-cancel").textContent = "Undo changes";
+    }
+  }
+
+  function touchSponsor() {
+    sponsorPending = true;
+    clearTimeout(sponsorTimer);
+    sponsorTimer = setTimeout(commitSponsor, 400);
+  }
+
+  function openSponsor(id) {
+    sponsorId = id || null;
+    var s = id ? findSponsor(id) : null;
+
+    clearTimeout(sponsorTimer);
+    sponsorTimer = null;
+    sponsorPending = false;
+    sponsorUndoing = false;
+    sponsorBefore = s ? { id: s.id, who: s.who, what: s.what, value: s.value } : null;
+
+    el("sponsor-editor-title").textContent = s ? "Edit sponsor" : "Add sponsor";
+    el("p-cancel").textContent = s ? "Undo changes" : "Discard";
+    el("p-who").value = s ? s.who : "";
+    el("p-what").value = s ? s.what : "";
+    el("p-val").value = s && num(s.value) ? String(num(s.value)) : "";
+    el("p-val-cur").textContent = cur();
+    el("p-delete-wrap").hidden = !s;
+
+    showSheet(el("sponsor-editor"));
+
+    /* Don't auto-focus on a phone: the keyboard would cover the sheet. */
+    if (window.matchMedia("(min-width: 720px)").matches) {
+      setTimeout(function () { el("p-who").focus(); }, 30);
+    }
+  }
+
+  ["p-who", "p-what", "p-val"].forEach(function (id) {
+    el(id).addEventListener("input", touchSponsor);
+    el(id).addEventListener("blur", commitSponsor);
+  });
+
+  el("sp-add").addEventListener("click", function () { openSponsor(null); });
+
+  el("p-cancel").addEventListener("click", function () {
+    sponsorUndoing = true;
+    clearTimeout(sponsorTimer);
+    sponsorTimer = null;
+    sponsorPending = false;
+    if (sponsorBefore) patchSponsor(sponsorBefore.id, sponsorBefore);
+    else if (sponsorId) removeSponsor(sponsorId);
+    sponsorId = null;
+    el("sponsor-editor").close();
+  });
+
+  el("p-delete").addEventListener("click", function () {
+    var s = findSponsor(sponsorId);
+    if (!s) return;
+    if (window.confirm('Remove ' + (s.who ? '"' + s.who + '"' : "this sponsor") + " from the list?")) {
+      sponsorUndoing = true;
+      clearTimeout(sponsorTimer);
+      sponsorPending = false;
+      removeSponsor(sponsorId);
+      sponsorId = null;
+      el("sponsor-editor").close();
+    }
+  });
+
+  el("sponsor-form").addEventListener("submit", commitSponsor);
+  el("sponsor-editor").addEventListener("close", function () {
+    commitSponsor();
+    sponsorUndoing = false;
+    sponsorId = null;
+    onSheetClose();
+  });
 
   /* ---------- the preparation timeline ---------- */
 
@@ -3013,7 +3438,7 @@
       el("headline-note").textContent = "Left to spend after everything you've booked.";
     }
 
-    if (ui.page !== "timeline") {
+    if (ui.page === "budget") {
       el("dock-key").textContent = over ? "Over budget by" : "Budget remaining";
       el("dock-value").textContent = blank ? "—" : money(Math.abs(t.remaining));
       el("dock-value").classList.toggle("over", over);
@@ -3303,6 +3728,7 @@
 
   el("add-phone").addEventListener("click", function () {
     if (ui.page === "timeline") openTask(null, ui.selected);
+    else if (ui.page === "sponsors") openSponsor(null);
     else openEditor(null);
   });
   el("add-desktop").addEventListener("click", function () { openEditor(null); });
@@ -3551,6 +3977,15 @@
     rows.push(["Deposits paid", "", t.paid.toFixed(2)]);
     rows.push(["Balance to pay", "", t.due.toFixed(2)]);
     rows.push(["Budget remaining", "", t.remaining.toFixed(2)]);
+
+    if (state.sponsors.length) {
+      rows.push([]);
+      rows.push(["Sponsors — not counted in any figure above"]);
+      rows.push(["Who", "Covering", "Roughly worth"]);
+      state.sponsors.slice().sort(byPosition).forEach(function (s) {
+        rows.push([s.who, s.what, num(s.value) ? num(s.value).toFixed(2) : ""]);
+      });
+    }
 
     var csv = rows.map(function (r) {
       return r.map(function (c) {

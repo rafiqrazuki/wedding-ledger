@@ -5,8 +5,8 @@ paid as a deposit, and what's still owed — measured against the budget you set
 
 **Live: https://rafiqrazuki.github.io/wedding-ledger/**
 
-The app has two pages: **Budget** (the ledger) and **Timeline** (preparation
-tasks on a calendar).
+The app has three pages: **Budget** (the ledger), **Timeline** (preparation
+tasks on a calendar) and **Sponsors** (who is covering what).
 
 ## What it does
 
@@ -32,6 +32,16 @@ On the Timeline page:
   usual moment has already passed is placed on today rather than created
   already late. Seeded tasks are ordinary tasks: rename, re-date or delete
   them like any other.
+
+On the Sponsors page:
+
+- Record who is covering something for you and what it is, with an optional
+  rough value.
+- **Deliberately outside the budget.** A sponsored thing is not money the
+  couple is spending, so nothing here reaches `totals()`: budget, total cost,
+  deposits, balance and cash in hand are all unchanged by it. Sponsored
+  figures are shown in brass rather than emerald to keep them apart, and the
+  CSV puts them in their own block below the totals.
 
 ## Where the data lives
 
